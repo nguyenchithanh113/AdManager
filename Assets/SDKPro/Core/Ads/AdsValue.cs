@@ -1,6 +1,6 @@
-﻿namespace SDKPro.Core.Parameters
+﻿namespace SDKPro.Core.Ads
 {
-    public class AdValue
+    public class AdsValue
     {
         public double value;
         public string adType;

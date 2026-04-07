@@ -1,35 +1,49 @@
 ﻿using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using SDKPro.Core.Parameters;
-using SDKPro.Core.Services.Interfaces;
 using UnityEngine;
 
-namespace SDKPro.Core.Services
+namespace SDKPro.Core.Ads
 {
-    public abstract class AdServiceBase : IAdService, IDisposable
+    public abstract class AdsServiceBase : IAdsService, IDisposable
     {
         public Action OnAdServiceInitializeFinished { get; set; }
         public Action OnInterLoadRequest { get; set; }
         public Action OnInterLoadedSuccess { get; set; }
-        public Action OnInterLoadedFail { get; set; }
+        public Action<string> OnInterLoadedFail { get; set; }
         public Action OnInterClicked { get; set; }
-        public Action OnInterAdDisplay { get; set; }
-        public Action OnInterAdDisplayFail { get; set; }
-        public Action OnInterAdClose { get; set; }
+        public Action OnInterDisplayed { get; set; }
+        public Action<string> OnInterDisplayedFail { get; set; }
+        public Action OnInterHidden { get; set; }
         public Action OnRewardLoadRequest { get; set; }
         public Action OnRewardLoadedSuccess { get; set; }
-        public Action OnRewardLoadedFail { get; set; }
+        public Action<string> OnRewardLoadedFail { get; set; }
         public Action OnRewardClicked { get; set; }
-        public Action OnRewardAdDisplay { get; set; }
-        public Action OnRewardAdDisplayFail { get; set; }
+        public Action OnRewardDisplayed { get; set; }
+        public Action<string> OnRewardDisplayedFail { get; set; }
         public Action OnRewardAdClose { get; set; }
         public Action OnRewardReceive { get; set; }
-        public Action OnBannerClicked { get; set; }
-        public Action OnBannerDisplayed { get; set; }
-        public Action OnAOADisplay { get; set; }
         
-        public Action<AdValue> OnAdPaid { get; set; }
+        public Action<bool> OnBannerDisplayed { get; set; }
+        public Action<bool> OnBannerHidden { get; set; }
+        public Action<bool> OnBannerClicked { get; set; }
+        public Action<bool,string> OnBannerLoadedFail { get; set; }
+        public Action<bool> OnBannerLoadedSuccess { get; set; }
+        
+        public Action OnAOADisplayed { get; set; }
+        public Action OnAOAHidden { get; set; }
+        public Action OnAOAClicked { get; set; }
+        public Action<string> OnAOALoadedFail { get; set; }
+        public Action OnAOALoadedSuccess { get; set; }
+        
+        public Action OnMrecDisplayed { get; set; }
+        public Action OnMrecClicked { get; set; }
+        public Action<string> OnMrecLoadedFail { get; set; }
+        public Action OnMrecLoadedSuccess { get; set; }
+        
+        public Action<AdsValue> OnAdsPaid { get; set; }
+        
+        public abstract string Mediation { get; }
         
         protected bool _isScheduleReloadReward;
         protected bool _isScheduleReloadInter;
@@ -48,7 +62,7 @@ namespace SDKPro.Core.Services
             _interRetryAttempt = Mathf.Min(_interRetryAttempt + 1, 5);
             float duration = Mathf.Pow(2f, _interRetryAttempt);
 
-            await UniTask.WaitForSeconds(duration);
+            await UniTask.WaitForSeconds(duration, cancellationToken: token);
             _isScheduleReloadInter = false;
             
             if(IsInterstitialReady()) return;
@@ -62,7 +76,7 @@ namespace SDKPro.Core.Services
             _rewardRetryAttempt = Mathf.Min(_rewardRetryAttempt + 1, 5);
             float duration = Mathf.Pow(2f, _rewardRetryAttempt);
 
-            await UniTask.WaitForSeconds(duration);
+            await UniTask.WaitForSeconds(duration, cancellationToken: token);
             _isScheduleReloadReward = false;
             
             if(IsRewardReady()) return;

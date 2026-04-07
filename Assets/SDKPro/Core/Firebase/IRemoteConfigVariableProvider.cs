@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace SDKPro.Core.Providers.Interfaces
+namespace SDKPro.Core.Firebase
 {
     public interface IRemoteConfigVariableProvider
     {

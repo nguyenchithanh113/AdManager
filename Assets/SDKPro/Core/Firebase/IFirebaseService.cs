@@ -1,9 +1,8 @@
 ﻿using System;
 using Cysharp.Threading.Tasks;
-using SDKPro.Core.Event;
-using SDKPro.Core.Providers.Interfaces;
+using SDKPro.Core.Ads;
 
-namespace SDKPro.Core.Services.Interfaces
+namespace SDKPro.Core.Firebase
 {
     public interface IFirebaseService
     {
@@ -12,6 +11,6 @@ namespace SDKPro.Core.Services.Interfaces
 
         public void LogEvent(string eventName, params EventParameter[] parameters);
         public void LogUniqueEvent(string eventName, params EventParameter[] parameters);
-        public void LogAdPaidEvent(AdValueEvent adValue);
+        public void LogAdPaidEvent(AdsValueEvent adsValue);
     }
 }

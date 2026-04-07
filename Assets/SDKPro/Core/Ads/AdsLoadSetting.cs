@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace SDKPro.Core.Parameters
+namespace SDKPro.Core.Ads
 {
     [System.Serializable]
     public class AdsLoadSetting : ScriptableObject

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace SDKPro.Core.Event
+namespace SDKPro.Core.Firebase
 {
     public struct EventParameter
     {
