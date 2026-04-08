@@ -11,6 +11,5 @@ namespace SDKPro.Core.Firebase
 
         public void LogEvent(string eventName, params EventParameter[] parameters);
         public void LogUniqueEvent(string eventName, params EventParameter[] parameters);
-        public void LogAdPaidEvent(AdsValueEvent adsValue);
     }
 }

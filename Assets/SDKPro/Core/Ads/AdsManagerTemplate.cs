@@ -4,6 +4,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using SDKPro.Core.Ads.Proxy;
 using SDKPro.Core.Firebase;
+using SDKPro.Core.Mmp;
 using SDKPro.Core.Utilities;
 using UnityEngine;
 
@@ -13,11 +14,12 @@ namespace SDKPro.Core.Ads
     {
         [SerializeField] private AdsServiceProxy m_AdsServiceProxy;
         [SerializeField] private AdsEventFirebaseBuilder m_AdsEventFirebaseBuilder;
+        [SerializeField] private AdsEventMmpBuilder m_AdsEventMmpBuilder;
 
         private IAdsService m_AdsService;
 
         private float m_InterCappingTime = 30f;
-        
+
         private float _timer;
         private float _lastTimeShowFullScreenAd = -100;
         private float _lastTimeShowInterAd = -100;
@@ -39,12 +41,12 @@ namespace SDKPro.Core.Ads
         public async UniTask Init()
         {
             m_AdsService = m_AdsServiceProxy.GetService();
-            
+
             var tasks = new List<UniTask>();
             tasks.Add(m_AdsService.Init(m_AdsServiceProxy.GetAdsLoadSetting()));
 
             await UniTask.WhenAll(tasks);
-            
+
             RegisterAdsBaseEvents(m_AdsService);
         }
 
@@ -85,10 +87,10 @@ namespace SDKPro.Core.Ads
 
             adsService.OnAdsPaid += value => OnAdPaid(value);
         }
-        
+
         private void Update()
         {
-            if(_isPause) return;
+            if (_isPause) return;
             _timer += Time.unscaledDeltaTime;
         }
 
@@ -101,23 +103,24 @@ namespace SDKPro.Core.Ads
         {
             _lastTimeShowFullScreenAd = _timer;
         }
-        
+
         public bool IsInterstitialPassCapping()
         {
             float cappingTime = m_InterCappingTime;
 
             return (_timer - _lastTimeShowInterAd) >= cappingTime;
         }
-        
-        public bool ShowInterstitial(Action successCallback, Action failCallback, string placement, bool ignoreCapping = false)
+
+        public bool ShowInterstitial(Action successCallback, Action failCallback, string placement,
+            bool ignoreCapping = false)
         {
             _interSuccessCallback = successCallback;
             _interFailCallback = failCallback;
             _interPlacement = placement;
-            
+
 #if NO_ADS
             _interSuccessCallback?.Invoke();
-            return false;    
+            return false;
 #endif
 
             if (!CanShowFullScreenAds())
@@ -125,7 +128,7 @@ namespace SDKPro.Core.Ads
                 _interSuccessCallback?.Invoke();
                 return false;
             }
-            
+
             OnInterCallShow(m_AdsService);
 
             if (!IsInterstitialPassCapping() && !ignoreCapping)
@@ -133,13 +136,13 @@ namespace SDKPro.Core.Ads
                 _interSuccessCallback?.Invoke();
                 return false;
             }
-            
+
             OnInterCallShowPassCapping(m_AdsService);
 
             if (m_AdsService.IsInterstitialReady())
             {
                 OnInterCallShowAdsReady(m_AdsService);
-                
+
                 _lastTimeShowFullScreenAd = _timer;
                 _lastTimeShowInterAd = _timer;
                 m_AdsService.ShowInterstitial();
@@ -153,19 +156,19 @@ namespace SDKPro.Core.Ads
                 return false;
             }
         }
-        
+
         public void ShowReward(Action successCallback, Action failCallback, string placement, string reward)
         {
             _rewardPlacement = placement;
             _reward = reward;
-            
+
             if (!CanShowFullScreenAds())
             {
                 return;
             }
 
             OnRewardCallShow(m_AdsService);
-            
+
             if (m_AdsService.IsRewardReady())
             {
                 _rewardSuccessCallback = successCallback;
@@ -184,12 +187,12 @@ namespace SDKPro.Core.Ads
 
         public void ShowBanner()
         {
-            
+            m_AdsService.ShowBanner();
         }
 
         public void HideBanner()
         {
-            
+            m_AdsService.HideBanner();
         }
 
         #region Event Handler API
@@ -199,20 +202,38 @@ namespace SDKPro.Core.Ads
             current = PlayerPrefs.GetInt(key, 1);
             PlayerPrefs.SetInt(key, current + 1);
         }
-        
-        void HandleLogEvent(string eventName, params EventParameter[] parameters)
+
+        Dictionary<string, string> EventParametersToDictionary(EventParameter[] parameters)
+        {
+            Dictionary<string, string> dictionary = new Dictionary<string, string>(parameters.Length);
+            foreach (var eventParameter in parameters)
+            {
+                dictionary.TryAdd(eventParameter.key, eventParameter.value);
+            }
+
+            return dictionary;
+        }
+
+        void HandleLogFirebaseEvent(string eventName, params EventParameter[] parameters)
         {
             FirebaseManager.Instance.LogEvent(eventName, parameters);
         }
 
-        void ProcessEventBuilder<T1>(T1 param, Func<T1, EventBuilderResult> factory)
+        void HandleLogMmpEvent(string eventName, params EventParameter[] parameters)
+        {
+            MmpManager.Instance.TrackCustomEvent(eventName, EventParametersToDictionary(parameters));
+        }
+
+        void ProcessEventBuilder<T1>(T1 param, Func<T1, EventBuilderResult> factory,
+            Action<string, EventParameter[]> logAction)
         {
             var result = factory(param);
             if (result.fail) return;
-            HandleLogEvent(result.eventName, result.parameters);
+            logAction.Invoke(result.eventName, result.parameters);
         }
 
-        void HandleLogIncrementalEvent(string sourceId, string placement, IAdsService adsService,  Func<EventInfo, EventBuilderResult> builder)
+        void HandleLogIncrementalEvent(string sourceId, string placement, IAdsService adsService,
+            Func<EventInfo, EventBuilderResult> firebaseBuilder, Func<EventInfo, EventBuilderResult> mmpBuilder)
         {
             IncrementAccumulateEvent(sourceId, out var current);
             EventInfo eventInfo = new EventInfo()
@@ -222,11 +243,12 @@ namespace SDKPro.Core.Ads
                 placement = placement,
                 mediation = adsService.Mediation,
             };
-            ProcessEventBuilder(eventInfo, builder);
+            ProcessEventBuilder(eventInfo, firebaseBuilder, HandleLogFirebaseEvent);
+            ProcessEventBuilder(eventInfo, mmpBuilder, HandleLogMmpEvent);
         }
 
         void HandleLogIncrementalBannerEvent(string sourceId, bool isCollapsible, IAdsService adsService,
-            Func<BannerEventInfo, EventBuilderResult> builder)
+            Func<BannerEventInfo, EventBuilderResult> firebaseBuilder, Func<BannerEventInfo, EventBuilderResult> mmpBuilder)
         {
             IncrementAccumulateEvent(sourceId, out var current);
             BannerEventInfo eventInfo = new BannerEventInfo()
@@ -237,11 +259,12 @@ namespace SDKPro.Core.Ads
                 mediation = adsService.Mediation,
                 isCollapsible = isCollapsible,
             };
-            ProcessEventBuilder(eventInfo, builder);
+            ProcessEventBuilder(eventInfo, firebaseBuilder, HandleLogFirebaseEvent);
+            ProcessEventBuilder(eventInfo, mmpBuilder, HandleLogMmpEvent);
         }
 
         void HandleLogIncrementalErrorEvent(string sourceId, string placement, string error, IAdsService adsService,
-            Func<EventErrorInfo, EventBuilderResult> builder)
+            Func<EventErrorInfo, EventBuilderResult> firebaseBuilder, Func<EventErrorInfo, EventBuilderResult> mmpBuilder)
         {
             IncrementAccumulateEvent(sourceId, out var current);
             EventErrorInfo eventInfo = new EventErrorInfo()
@@ -252,12 +275,14 @@ namespace SDKPro.Core.Ads
                 placement = placement,
                 mediation = adsService.Mediation
             };
-            
-            ProcessEventBuilder(eventInfo, builder);
+
+            ProcessEventBuilder(eventInfo, firebaseBuilder, HandleLogFirebaseEvent);
+            ProcessEventBuilder(eventInfo, mmpBuilder, HandleLogMmpEvent);
         }
-        
-        void HandleLogIncrementalErrorBannerEvent(string sourceId, bool isCollapsible, string error, IAdsService adsService,
-            Func<EventErrorInfo, EventBuilderResult> builder)
+
+        void HandleLogIncrementalErrorBannerEvent(string sourceId, bool isCollapsible, string error,
+            IAdsService adsService,
+            Func<EventErrorInfo, EventBuilderResult> firebaseBuilder, Func<EventErrorInfo, EventBuilderResult> mmpBuilder)
         {
             IncrementAccumulateEvent(sourceId, out var current);
             EventErrorInfo eventInfo = new EventErrorInfo()
@@ -268,12 +293,13 @@ namespace SDKPro.Core.Ads
                 mediation = adsService.Mediation,
                 isCollapsible = isCollapsible,
             };
-            
-            ProcessEventBuilder(eventInfo, builder);
+
+            ProcessEventBuilder(eventInfo, firebaseBuilder, HandleLogFirebaseEvent);
+            ProcessEventBuilder(eventInfo, mmpBuilder, HandleLogMmpEvent);
         }
 
         void HandleLogIncrementalInterEvent(string sourceId, IAdsService adsService,
-            Func<EventInfo, EventBuilderResult> builder)
+            Func<EventInfo, EventBuilderResult> firebaseBuilder, Func<EventInfo, EventBuilderResult> mmpBuilder)
         {
             IncrementAccumulateEvent(sourceId, out var current);
             EventInfo eventInfo = new EventInfo()
@@ -283,11 +309,12 @@ namespace SDKPro.Core.Ads
                 placement = _interPlacement,
                 mediation = adsService.Mediation
             };
-            ProcessEventBuilder(eventInfo, builder);
+            ProcessEventBuilder(eventInfo, firebaseBuilder, HandleLogFirebaseEvent);
+            ProcessEventBuilder(eventInfo, mmpBuilder, HandleLogMmpEvent);
         }
 
         void HandleLogIncrementalRewardEvent(string sourceId, IAdsService adsService,
-            Func<RewardEventInfo, EventBuilderResult> builder)
+            Func<RewardEventInfo, EventBuilderResult> firebaseBuilder, Func<RewardEventInfo, EventBuilderResult> mmpBuilder)
         {
             IncrementAccumulateEvent(sourceId, out var current);
             RewardEventInfo eventInfo = new RewardEventInfo()
@@ -298,7 +325,8 @@ namespace SDKPro.Core.Ads
                 reward = _reward,
                 mediation = adsService.Mediation,
             };
-            ProcessEventBuilder(eventInfo, builder);
+            ProcessEventBuilder(eventInfo, firebaseBuilder, HandleLogFirebaseEvent);
+            ProcessEventBuilder(eventInfo, mmpBuilder, HandleLogMmpEvent);
         }
 
         #endregion
@@ -308,49 +336,51 @@ namespace SDKPro.Core.Ads
         void OnInterDisplayed(IAdsService adsService)
         {
             string sourceId = "InterDisplayed";
-            HandleLogIncrementalInterEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnInterDisplayed);
+            HandleLogIncrementalInterEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnInterDisplayed, m_AdsEventMmpBuilder.OnInterDisplayed);
         }
 
         void OnInterDisplayedFail(string error, IAdsService adsService)
         {
             string sourceId = "InterDisplayedFail";
-            HandleLogIncrementalErrorEvent(sourceId, _interPlacement, error,  adsService, m_AdsEventFirebaseBuilder.OnInterDisplayedFailed);
+            HandleLogIncrementalErrorEvent(sourceId, _interPlacement, error, adsService,
+                m_AdsEventFirebaseBuilder.OnInterDisplayedFailed, m_AdsEventMmpBuilder.OnInterDisplayedFailed);
         }
 
         void OnInterHidden(IAdsService adsService)
         {
             string sourceId = "InterHidden";
-            HandleLogIncrementalInterEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnInterHidden);
+            HandleLogIncrementalInterEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnInterHidden, m_AdsEventMmpBuilder.OnInterHidden);
         }
 
         void OnInterClicked(IAdsService adsService)
         {
             string sourceId = "InterClicked";
-            HandleLogIncrementalInterEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnInterClicked);
+            HandleLogIncrementalInterEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnInterClicked, m_AdsEventMmpBuilder.OnInterClicked);
         }
 
         void OnInterLoadRequest(IAdsService adsService)
         {
             string sourceId = "InterLoadRequest";
-            HandleLogIncrementalInterEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnInterLoadRequest);
+            HandleLogIncrementalInterEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnInterLoadRequest, m_AdsEventMmpBuilder.OnInterLoadRequest);
         }
 
         void OnInterLoadedSuccess(IAdsService adsService)
         {
             string sourceId = "InterLoadedSuccess";
-            HandleLogIncrementalInterEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnInterLoadedSuccess);
+            HandleLogIncrementalInterEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnInterLoadedSuccess, m_AdsEventMmpBuilder.OnInterLoadedSuccess);
         }
 
         void OnInterLoadedFail(string error, IAdsService adsService)
         {
             string sourceId = "InterLoadedFail";
-            HandleLogIncrementalErrorEvent(sourceId, _interPlacement, error, adsService, m_AdsEventFirebaseBuilder.OnInterLoadedFail);
+            HandleLogIncrementalErrorEvent(sourceId, _interPlacement, error, adsService,
+                m_AdsEventFirebaseBuilder.OnInterLoadedFail, m_AdsEventMmpBuilder.OnInterLoadedFail);
         }
 
         void OnRewardDisplayed(IAdsService adsService)
         {
             string sourceId = "RewardDisplayed";
-            HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardDisplayed);
+            HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardDisplayed, m_AdsEventMmpBuilder.OnRewardDisplayed);
         }
 
         void OnRewardDisplayedFail(string error, IAdsService adsService)
@@ -360,9 +390,10 @@ namespace SDKPro.Core.Ads
                 _rewardSuccessCallback?.Invoke();
                 _rewardSuccessCallback = null;
             })).Forget();
-            
+
             string sourceId = "RewardDisplayedFail";
-            HandleLogIncrementalErrorEvent(sourceId, _rewardPlacement, error, adsService, m_AdsEventFirebaseBuilder.OnRewardDisplayedFailed);
+            HandleLogIncrementalErrorEvent(sourceId, _rewardPlacement, error, adsService,
+                m_AdsEventFirebaseBuilder.OnRewardDisplayedFailed, m_AdsEventMmpBuilder.OnRewardDisplayedFailed);
         }
 
         void OnRewardReceive(IAdsService adsService)
@@ -372,63 +403,69 @@ namespace SDKPro.Core.Ads
                 _rewardSuccessCallback?.Invoke();
                 _rewardSuccessCallback = null;
             })).Forget();
-            
+
             string sourceId = "RewardReceive";
-            HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardReceive);
+            HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardReceive, m_AdsEventMmpBuilder.OnRewardReceive);
         }
 
         void OnRewardClicked(IAdsService adsService)
         {
             string sourceId = "RewardClicked";
-            HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardClicked);
+            HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardClicked, m_AdsEventMmpBuilder.OnRewardClicked);
         }
 
         void OnRewardLoadRequest(IAdsService adsService)
         {
             string sourceId = "RewardLoadRequest";
-            HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardLoadRequest);
+            HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardLoadRequest, m_AdsEventMmpBuilder.OnRewardLoadRequest);
         }
 
         void OnRewardLoadedSuccess(IAdsService adsService)
         {
             string sourceId = "RewardLoadedSuccess";
-            HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardLoadedSuccess);
+            HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardLoadedSuccess, m_AdsEventMmpBuilder.OnRewardLoadedSuccess);
         }
 
         void OnRewardLoadedFail(string error, IAdsService adsService)
         {
             string sourceId = "RewardLoadedFail";
-            HandleLogIncrementalErrorEvent(sourceId, _rewardPlacement, error, adsService, m_AdsEventFirebaseBuilder.OnRewardLoadedFail);
+            HandleLogIncrementalErrorEvent(sourceId, _rewardPlacement, error, adsService,
+                m_AdsEventFirebaseBuilder.OnRewardLoadedFail, m_AdsEventMmpBuilder.OnRewardLoadedFail);
         }
 
         void OnBannerDisplayed(bool isCollapsible, IAdsService adsService)
         {
             string sourceId = "BannerDisplayed";
-            HandleLogIncrementalBannerEvent(sourceId, isCollapsible, adsService, m_AdsEventFirebaseBuilder.OnBannerDisplayed); 
+            HandleLogIncrementalBannerEvent(sourceId, isCollapsible, adsService,
+                m_AdsEventFirebaseBuilder.OnBannerDisplayed, m_AdsEventMmpBuilder.OnBannerDisplayed);
         }
 
         void OnBannerHidden(bool isCollapsible, IAdsService adsService)
         {
             string sourceId = "BannerHidden";
-            HandleLogIncrementalBannerEvent(sourceId, isCollapsible, adsService, m_AdsEventFirebaseBuilder.OnBannerHidden);
+            HandleLogIncrementalBannerEvent(sourceId, isCollapsible, adsService,
+                m_AdsEventFirebaseBuilder.OnBannerHidden, m_AdsEventMmpBuilder.OnBannerHidden);
         }
 
         void OnBannerClicked(bool isCollapsible, IAdsService adsService)
         {
             string sourceId = "BannerClicked";
-            HandleLogIncrementalBannerEvent(sourceId, isCollapsible, adsService, m_AdsEventFirebaseBuilder.OnBannerClicked);
+            HandleLogIncrementalBannerEvent(sourceId, isCollapsible, adsService,
+                m_AdsEventFirebaseBuilder.OnBannerClicked, m_AdsEventMmpBuilder.OnBannerClicked);
         }
 
         void OnBannerLoadedFail(string error, bool isCollapsible, IAdsService adsService)
         {
             string sourceId = "BannerLoadedFail";
-            HandleLogIncrementalErrorBannerEvent(sourceId, isCollapsible, error, adsService, m_AdsEventFirebaseBuilder.OnBannerLoadedFail);
+            HandleLogIncrementalErrorBannerEvent(sourceId, isCollapsible, error, adsService,
+                m_AdsEventFirebaseBuilder.OnBannerLoadedFail, m_AdsEventMmpBuilder.OnBannerLoadedFail);
         }
 
         void OnBannerLoadedSuccess(bool isCollapsible, IAdsService adsService)
         {
             string sourceId = "BannerLoadedSuccess";
-            HandleLogIncrementalBannerEvent(sourceId, isCollapsible, adsService, m_AdsEventFirebaseBuilder.OnBannerLoadedSuccess);
+            HandleLogIncrementalBannerEvent(sourceId, isCollapsible, adsService,
+                m_AdsEventFirebaseBuilder.OnBannerLoadedSuccess);
         }
 
         void OnAOADisplayed(IAdsService adsService)
@@ -489,7 +526,7 @@ namespace SDKPro.Core.Ads
         {
             var result = m_AdsEventFirebaseBuilder.OnAdPaid(adsValue);
             if (result.fail) return;
-            HandleLogEvent(result.eventName, result.parameters);
+            HandleLogFirebaseEvent(result.eventName, result.parameters);
         }
 
         #endregion
@@ -505,25 +542,29 @@ namespace SDKPro.Core.Ads
         void OnInterCallShowPassCapping(IAdsService adsService)
         {
             string sourceId = "InterCallShowPassCapping";
-            HandleLogIncrementalEvent(sourceId, _interPlacement, adsService, m_AdsEventFirebaseBuilder.OnInterCallShowPassCapping);
+            HandleLogIncrementalEvent(sourceId, _interPlacement, adsService,
+                m_AdsEventFirebaseBuilder.OnInterCallShowPassCapping);
         }
 
         void OnInterCallShowFailCapping(IAdsService adsService)
         {
             string sourceId = "InterCallShowFailCapping";
-            HandleLogIncrementalEvent(sourceId, _interPlacement, adsService, m_AdsEventFirebaseBuilder.OnInterCallShowFailCapping);
+            HandleLogIncrementalEvent(sourceId, _interPlacement, adsService,
+                m_AdsEventFirebaseBuilder.OnInterCallShowFailCapping);
         }
 
         void OnInterCallShowAdsReady(IAdsService adsService)
         {
             string sourceId = "InterCallShowAdsReady";
-            HandleLogIncrementalEvent(sourceId, _interPlacement, adsService, m_AdsEventFirebaseBuilder.OnInterCallShowAdsReady);
+            HandleLogIncrementalEvent(sourceId, _interPlacement, adsService,
+                m_AdsEventFirebaseBuilder.OnInterCallShowAdsReady);
         }
 
         void OnInterCallShowAdsNotReady(IAdsService adsService)
         {
             string sourceId = "InterCallShowAdsNotReady";
-            HandleLogIncrementalEvent(sourceId, _interPlacement, adsService, m_AdsEventFirebaseBuilder.OnInterCallShowAdsNotReady);
+            HandleLogIncrementalEvent(sourceId, _interPlacement, adsService,
+                m_AdsEventFirebaseBuilder.OnInterCallShowAdsNotReady);
         }
 
         void OnRewardCallShow(IAdsService adsService)
@@ -541,12 +582,13 @@ namespace SDKPro.Core.Ads
         void OnRewardCallShowAdsNotReady(IAdsService adsService)
         {
             string sourceId = "RewardCallShowAdsNotReady";
-            HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardCallShowAdsNotReady);
+            HandleLogIncrementalRewardEvent(sourceId, adsService,
+                m_AdsEventFirebaseBuilder.OnRewardCallShowAdsNotReady);
         }
 
         #endregion
-        
-        
+
+
         static string IsConnectToInternetString()
         {
             return Application.internetReachability != NetworkReachability.NotReachable ? "online" : "offline";

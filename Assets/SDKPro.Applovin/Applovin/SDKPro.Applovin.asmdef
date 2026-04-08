@@ -1,0 +1,18 @@
+{
+    "name": "SDKPro.Applovin",
+    "rootNamespace": "SDKPro",
+    "references": [
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
+        "GUID:23d441634766c354491f021344e146d8",
+        "GUID:a4cfc1a18fa3a469b96d885db522f42e"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

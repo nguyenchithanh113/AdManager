@@ -51,7 +51,7 @@ namespace SDKPro.Core.Ads
         protected int _rewardRetryAttempt = 0;
         protected int _interRetryAttempt = 0;
 
-        private CancellationTokenSource m_SessionToken;
+        protected CancellationTokenSource m_SessionToken;
         
         public bool IsInit { get; protected set; }
         public async UniTaskVoid ScheduleReloadInterstitial(CancellationToken token)
@@ -122,6 +122,8 @@ namespace SDKPro.Core.Ads
                 m_SessionToken.Dispose();
             }
         }
+
+        public abstract void UpdateUserID(string id);
 
         public abstract void LoadInterstitial();
         public abstract bool IsInterstitialReady();

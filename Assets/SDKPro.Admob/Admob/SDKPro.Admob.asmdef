@@ -1,0 +1,17 @@
+{
+    "name": "SDKPro.Admob",
+    "rootNamespace": "SDKPro",
+    "references": [
+        "GUID:23d441634766c354491f021344e146d8",
+        "GUID:f51ebe6a0ceec4240a699833d6309b23"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
