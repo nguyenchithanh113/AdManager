@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace SDKPro.Admob
 {
-    [CreateAssetMenu(menuName = "SDKPro/ApplovinConfig")]
+    [CreateAssetMenu(menuName = "SDKPro/AdmobConfig")]
     public class AdmobConfig : ScriptableObject
     {
         public string interID;
