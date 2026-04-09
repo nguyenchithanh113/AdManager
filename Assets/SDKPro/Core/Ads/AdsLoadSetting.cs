@@ -2,7 +2,7 @@
 
 namespace SDKPro.Core.Ads
 {
-    [System.Serializable]
+    [CreateAssetMenu(menuName = "SDKPro/AdsLoadSetting")]
     public class AdsLoadSetting : ScriptableObject
     {
         public bool loadInter;

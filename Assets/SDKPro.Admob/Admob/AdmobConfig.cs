@@ -1,8 +1,10 @@
 ﻿using GoogleMobileAds.Api;
+using UnityEngine;
 
 namespace SDKPro.Admob
 {
-    public class AdmobConfig
+    [CreateAssetMenu(menuName = "SDKPro/ApplovinConfig")]
+    public class AdmobConfig : ScriptableObject
     {
         public string interID;
         public string rewardID;
