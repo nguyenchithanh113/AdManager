@@ -41,13 +41,12 @@ namespace SDKPro.Core.Mockups
         public async UniTask Init()
         {
             m_AdsService = m_AdsServiceProxy.GetService();
+            RegisterAdsBaseEvents(m_AdsService);
 
             var tasks = new List<UniTask>();
             tasks.Add(m_AdsService.Init(m_AdsServiceProxy.GetAdsLoadSetting()));
 
             await UniTask.WhenAll(tasks);
-
-            RegisterAdsBaseEvents(m_AdsService);
         }
 
         void RegisterAdsBaseEvents(IAdsService adsService)

@@ -224,7 +224,7 @@ namespace SDKPro.Admob
                 {
                     ScheduleReloadReward(m_SessionToken.Token).Forget();
                     Debug.LogError("Rewarded ad failed to load an ad with error : " + error);
-                    OnRewardLoadedFail.Invoke(error.GetMessage());
+                    OnRewardLoadedFail?.Invoke(error.GetMessage());
                     return;
                 }
 
@@ -234,7 +234,7 @@ namespace SDKPro.Admob
                 {
                     ScheduleReloadReward(m_SessionToken.Token).Forget();
                     Debug.LogError("Unexpected error: Rewarded load event fired with null ad and null error.");
-                    OnRewardLoadedFail.Invoke("Unexpected error");
+                    OnRewardLoadedFail?.Invoke("Unexpected error");
                     return;
                 }
 
@@ -390,13 +390,13 @@ namespace SDKPro.Admob
             // Raised when an ad is loaded into the banner view.
             ad.OnBannerAdLoaded += (() =>
             {
-                OnBannerLoadedSuccess.Invoke(IsBannerCollapsible());
+                OnBannerLoadedSuccess?.Invoke(IsBannerCollapsible());
                 Debug.Log("Ad Banner Loaded Success");
             });
             // Raised when an ad fails to load into the banner view.
             ad.OnBannerAdLoadFailed += (error =>
             {
-                OnBannerLoadedFail.Invoke(IsBannerCollapsible(), error.GetMessage());
+                OnBannerLoadedFail?.Invoke(IsBannerCollapsible(), error.GetMessage());
                 Debug.Log("Ad Banner Loaded Failed with error: "+error);
             });
             // Raised when the ad is estimated to have earned money.
