@@ -37,6 +37,8 @@ namespace SDKPro.Core.Mockups
         private Action _rewardFailCallback;
         private bool _isPause;
         private bool _blockInit = false;
+        
+        public List<Func<bool>> InterShowRules = new();
 
         public async UniTask Init()
         {
@@ -121,6 +123,15 @@ namespace SDKPro.Core.Mockups
             _interSuccessCallback?.Invoke();
             return false;
 #endif
+            
+            foreach (var interShowRule in InterShowRules)
+            {
+                if (interShowRule() == false)
+                {
+                    _interSuccessCallback?.Invoke();
+                    return false;
+                }
+            }
 
             if (!CanShowFullScreenAds())
             {
