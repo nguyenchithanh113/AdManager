@@ -6,21 +6,26 @@ namespace SDKPro.Core.Firebase
 {
     public class FirebaseManager : Singleton<FirebaseManager>
     {
-        public FirebaseServiceProxy m_ServiceProxy;
+        public FirebaseServiceProxyBase ServiceProxy;
 
         private IFirebaseService m_Service;
 
         public async UniTask Init(IRemoteConfigVariableProvider remoteConfigVariableProvider, CancellationToken token)
         {
-            m_Service = m_ServiceProxy.Get();
+            m_Service = ServiceProxy.Get();
 
-            await m_Service.Init(remoteConfigVariableProvider);
+            await m_Service.Init(remoteConfigVariableProvider, token);
         }
 
         public void LogEvent(string eventName, params EventParameter[] parameters) =>
             m_Service.LogEvent(eventName, parameters);
+        public void LogEvent(string eventName) =>
+            m_Service.LogEvent(eventName);
 
         public void LogUniqueEvent(string eventName, params EventParameter[] parameters) =>
             m_Service.LogUniqueEvent(eventName, parameters);
+        
+        public void LogUniqueEvent(string eventName) =>
+            m_Service.LogUniqueEvent(eventName);
     }
 }

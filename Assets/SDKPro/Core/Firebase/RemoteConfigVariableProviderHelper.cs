@@ -32,6 +32,17 @@ namespace SDKPro.Core.Firebase
             return variableInfos;
         }
 
+        public static Dictionary<string, object> ToDictionary(List<RemoteVariableInfo> variableInfos)
+        {
+            Dictionary<string, object> map = new();
+            foreach (var remoteVariableInfo in variableInfos)
+            {
+                map.Add(remoteVariableInfo.key, remoteVariableInfo.boxedValue);
+            }
+
+            return map;
+        }
+
         public static void Update<T>(List<RemoteVariableInfo> variableInfos, T provider)
             where T : class, IRemoteConfigVariableProvider
         {
@@ -50,6 +61,24 @@ namespace SDKPro.Core.Firebase
                 if (fieldInfo.GetCustomAttribute<RemoteVariableAttribute>() != null)
                 {
                     if (map.TryGetValue(fieldInfo.Name, out var value))
+                    {
+                        fieldInfo.SetValue(provider, value);
+                    }
+                }
+            }
+        }
+        
+        public static void Update<T>(Dictionary<string, object> variableInfos, T provider)
+            where T : class, IRemoteConfigVariableProvider
+        {
+            var fieldInfos = typeof(T).GetFields();
+            for (int i = 0; i < fieldInfos.Length; i++)
+            {
+                var fieldInfo = fieldInfos[i];
+
+                if (fieldInfo.GetCustomAttribute<RemoteVariableAttribute>() != null)
+                {
+                    if (variableInfos.TryGetValue(fieldInfo.Name, out var value))
                     {
                         fieldInfo.SetValue(provider, value);
                     }

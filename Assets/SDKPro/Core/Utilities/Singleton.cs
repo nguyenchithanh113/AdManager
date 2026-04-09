@@ -20,7 +20,10 @@ namespace SDKPro.Core.Utilities
 
         private void OnDestroy()
         {
-            Instance = null;
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
     }
 }

@@ -2,8 +2,7 @@
 
 namespace SDKPro.Core.Mmp
 {
-    public abstract class MmpServiceProxy : MonoBehaviour
+    public abstract class MmpServiceProxy : Proxy<IMmpService>
     {
-        public abstract IMmpService Get();
     }
 }

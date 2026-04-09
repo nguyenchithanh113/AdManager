@@ -7,6 +7,7 @@ namespace SDKPro.Core.Firebase
         public List<RemoteVariableInfo> GetVariableInfos();
 
         public void Update(List<RemoteVariableInfo> updatedValues);
+        public void Update(Dictionary<string, object> updatedValues);
     }
 
     public struct RemoteVariableInfo
