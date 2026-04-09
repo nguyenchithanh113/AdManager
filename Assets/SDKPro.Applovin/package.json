@@ -1,0 +1,12 @@
+{
+  "name": "SDKPro.Applovin",
+  "version": "1.0.0",
+  "displayName": "SDKPro.Applovin",
+  "description": "SDKPro Applovin runtime",
+  "unity": "6000.1",
+  "license": "MIT",
+  "author": {
+    "name": "Thanh",
+    "email": "chithanh1131999@gmail.com"
+  }
+}

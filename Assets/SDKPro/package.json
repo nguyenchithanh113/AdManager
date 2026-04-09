@@ -1,0 +1,12 @@
+{
+  "name": "SDKPro.Core",
+  "version": "1.0.0",
+  "displayName": "SDKPro.Core",
+  "description": "SDKPro core",
+  "unity": "6000.1",
+  "license": "MIT",
+  "author": {
+    "name": "Thanh",
+    "email": "chithanh1131999@gmail.com"
+  }
+}
