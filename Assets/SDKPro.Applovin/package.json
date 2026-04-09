@@ -1,7 +1,7 @@
 {
-  "name": "SDKPro.Applovin",
+  "name": "com.sdkpro.applovin",
   "version": "1.0.0",
-  "displayName": "SDKPro.Applovin",
+  "displayName": "com.sdkpro.applovin",
   "description": "SDKPro Applovin runtime",
   "unity": "6000.1",
   "license": "MIT",

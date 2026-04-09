@@ -1,7 +1,7 @@
 {
-  "name": "SDKPro.Appsflyer",
+  "name": "com.sdkpro.appsflyer",
   "version": "1.0.0",
-  "displayName": "SDKPro.Appsflyer",
+  "displayName": "com.sdkpro.appsflyer",
   "description": "SDKPro Appsflyer runtime",
   "unity": "6000.1",
   "license": "MIT",

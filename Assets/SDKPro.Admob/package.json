@@ -1,7 +1,7 @@
 {
-  "name": "SDKPro.Admob",
+  "name": "com.sdkpro.admob",
   "version": "1.0.0",
-  "displayName": "SDKPro.Admob",
+  "displayName": "com.sdkpro.admob",
   "description": "SDKPro Admob runtime",
   "unity": "6000.1",
   "license": "MIT",
