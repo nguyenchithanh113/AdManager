@@ -18,7 +18,7 @@ namespace SDKPro.Core.Utilities
             }
         }
 
-        private void OnDestroy()
+        protected virtual void OnDestroy()
         {
             if (Instance == this)
             {
