@@ -5,9 +5,15 @@ namespace SDKPro.Core.Firebase
     public interface IRemoteConfigVariableProvider
     {
         public List<RemoteVariableInfo> GetVariableInfos();
+        
+        public void Update(UpdateResult updateResult);
+    }
 
-        public void Update(List<RemoteVariableInfo> updatedValues);
-        public void Update(Dictionary<string, object> updatedValues);
+    public class UpdateResult
+    {
+        public Dictionary<string, object> resultValues;
+        public bool success;
+        public string error;
     }
 
     public struct RemoteVariableInfo

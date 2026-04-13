@@ -7,10 +7,23 @@ namespace SDKPro.Core.Mockups
 {
     public class RemoteConfigTemplate : IRemoteConfigVariableProvider
     {
+        public enum Status
+        {
+            Pending,
+            Success,
+            FailAndUseDefaultValues
+        }
+        
+        public class UpdateInfo
+        {
+            public Status status;
+            public RemoteConfigTemplate instance;
+        }
+        
         [RemoteVariable]
         public int interCapping = 30;
 
-        public Subject<RemoteConfigTemplate> OnUpdate = new();
+        public ReactiveProperty<UpdateInfo> updateInfo = new();
         
         private static RemoteConfigTemplate m_Instance;
         
@@ -21,6 +34,11 @@ namespace SDKPro.Core.Mockups
                 if (m_Instance == null)
                 {
                     m_Instance = new RemoteConfigTemplate();
+                    m_Instance.updateInfo.Value = new UpdateInfo()
+                    {
+                        instance = m_Instance,
+                        status = Status.Pending
+                    };
                 }
 
                 return m_Instance;
@@ -32,16 +50,14 @@ namespace SDKPro.Core.Mockups
             return RemoteConfigVariableProviderHelper.BuildVariableInfos<RemoteConfigTemplate>();
         }
 
-        public void Update(List<RemoteVariableInfo> updatedValues)
+        public void Update(UpdateResult updateResult)
         {
-            RemoteConfigVariableProviderHelper.Update(updatedValues, this);
-            OnUpdate.OnNext(this); 
-        }
-
-        public void Update(Dictionary<string, object> updatedValues)
-        {
-            RemoteConfigVariableProviderHelper.Update(updatedValues, this);
-            OnUpdate.OnNext(this); 
+            RemoteConfigVariableProviderHelper.Update(updateResult.resultValues, this);
+            updateInfo.Value = new UpdateInfo()
+            {
+                instance = this,
+                status = updateResult.success ? Status.Success : Status.FailAndUseDefaultValues
+            };
         }
     }
 }

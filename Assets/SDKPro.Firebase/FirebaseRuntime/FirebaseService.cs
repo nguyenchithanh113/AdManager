@@ -106,13 +106,17 @@ namespace SDKPro.FirebaseRuntime
         
         private void FetchComplete(Task fetchTask)
         {
+            string error = "";
+            
             if (fetchTask.IsCanceled)
             {
                 Debug.Log("Fetch canceled.");
+                error = "Fetch canceled";
             }
             else if (fetchTask.IsFaulted)
             {
                 Debug.Log("Fetch encountered an error.");
+                error = "Fetch encountered an error";
             }
             else if (fetchTask.IsCompleted)
             {
@@ -161,7 +165,11 @@ namespace SDKPro.FirebaseRuntime
                                 }
                             }
 
-                            m_RemoteConfigVariableProvider.Update(m_RemoteVariableMap);
+                            m_RemoteConfigVariableProvider.Update(new UpdateResult()
+                            {
+                                resultValues = m_RemoteVariableMap,
+                                success = true
+                            });
                         });
                     break;
                 case LastFetchStatus.Failure:
@@ -170,10 +178,12 @@ namespace SDKPro.FirebaseRuntime
                         case FetchFailureReason.Error:
                             SchedulingRefetchRemote().Forget();
                             Debug.Log("Error");
+                            error = "Fetch encountered an error";
                             break;
                         case FetchFailureReason.Throttled:
                             SchedulingRefetchRemote().Forget();
                             Debug.Log("Fetch throttled until " + info.ThrottledEndTime);
+                            error = "Fetch throttled";
                             break;
                     }
 
@@ -183,7 +193,12 @@ namespace SDKPro.FirebaseRuntime
                     break;
             }
             
-            m_RemoteConfigVariableProvider.Update(m_RemoteVariableMap);
+            m_RemoteConfigVariableProvider.Update(new UpdateResult()
+            {
+                resultValues = m_RemoteVariableMap,
+                success = false,
+                error = error
+            });
         }
         
         private bool _isSchedulingRefetch;
