@@ -7,8 +7,14 @@ namespace SDKPro.Core.Firebase
 {
     public interface IFirebaseService
     {
+        public delegate void OnFetchFailHandler(string error);
+        public delegate void OnFetchSuccessHandler();
+        
         public UniTask Init(IRemoteConfigVariableProvider remoteConfigVariableProvider, CancellationToken token);
-        public Action OnInit { get; } 
+        public Action OnInit { get; set; } 
+        public Action OnStartFetchingConfig { get; set; }
+        public event OnFetchFailHandler OnFetchFail;
+        public event OnFetchSuccessHandler OnFetchSuccess;
 
         public void LogEvent(string eventName, params EventParameter[] parameters);
         public void LogEvent(string eventName);

@@ -18,7 +18,11 @@ namespace SDKPro.FirebaseRuntime
 
         private IRemoteConfigVariableProvider m_RemoteConfigVariableProvider;
         private Dictionary<string, object> m_RemoteVariableMap = new();
-        
+
+        public Action OnStartFetchingConfig { get; set; }
+        public event IFirebaseService.OnFetchFailHandler OnFetchFail;
+        public event IFirebaseService.OnFetchSuccessHandler OnFetchSuccess;
+
         public async UniTask Init(IRemoteConfigVariableProvider remoteConfigVariableProvider, CancellationToken token)
         {
             Debug.Log("Firebase Initializing");
@@ -38,6 +42,7 @@ namespace SDKPro.FirebaseRuntime
                         .ContinueWithOnMainThread(task => { FetchDataAsync(); }, token);
                     // Set a flag here to indicate whether Firebase is ready to use by your app.
                     m_IsInitalized = true;
+                    OnInit?.Invoke();
                     Debug.Log("Firebase Initialized");
                 }
                 else
@@ -97,6 +102,7 @@ namespace SDKPro.FirebaseRuntime
 
         public Task FetchDataAsync()
         {
+            OnStartFetchingConfig?.Invoke();
             Debug.Log("Fetching data...");
             System.Threading.Tasks.Task fetchTask =
                 Firebase.RemoteConfig.FirebaseRemoteConfig.DefaultInstance.FetchAsync(
@@ -170,6 +176,7 @@ namespace SDKPro.FirebaseRuntime
                                 resultValues = m_RemoteVariableMap,
                                 success = true
                             });
+                            OnFetchSuccess?.Invoke();
                         });
                     break;
                 case LastFetchStatus.Failure:
@@ -199,6 +206,8 @@ namespace SDKPro.FirebaseRuntime
                 success = false,
                 error = error
             });
+            
+            OnFetchFail?.Invoke(error);
         }
         
         private bool _isSchedulingRefetch;

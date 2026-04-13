@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using SDKPro.Core.Utilities;
 
@@ -10,9 +11,17 @@ namespace SDKPro.Core.Firebase
 
         private IFirebaseService m_Service;
 
+        public Action onStartFetchingConfig;
+        public event IFirebaseService.OnFetchFailHandler onFetchFail;
+        public event IFirebaseService.OnFetchSuccessHandler onFetchSuccess;
+
         public async UniTask Init(IRemoteConfigVariableProvider remoteConfigVariableProvider, CancellationToken token)
         {
             m_Service = ServiceProxy.Get();
+
+            m_Service.OnFetchFail += onFetchFail;
+            m_Service.OnFetchSuccess += onFetchSuccess;
+            m_Service.OnStartFetchingConfig += onStartFetchingConfig;
 
             await m_Service.Init(remoteConfigVariableProvider, token);
         }

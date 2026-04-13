@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using SDKPro.Core.Firebase;
@@ -7,12 +8,29 @@ namespace SDKPro.Core.Mockups
 {
     public class DummyFirebaseService : IFirebaseService
     {
+        private IRemoteConfigVariableProvider m_RemoteConfigVariableProvider;
+        private Dictionary<string, object> m_RemoteVariableMap = new();
         public async UniTask Init(IRemoteConfigVariableProvider remoteConfigVariableProvider, CancellationToken token)
         {
+            m_RemoteConfigVariableProvider = remoteConfigVariableProvider;
+            m_RemoteVariableMap =
+                RemoteConfigVariableProviderHelper.ToDictionary(m_RemoteConfigVariableProvider.GetVariableInfos());
             
+            m_RemoteConfigVariableProvider.Update(new UpdateResult()
+            {
+                resultValues = m_RemoteVariableMap,
+                success = true,
+            });
+            OnStartFetchingConfig?.Invoke();
+            OnFetchSuccess?.Invoke();
+            OnInit?.Invoke();
         }
 
-        public Action OnInit { get; }
+        public Action OnInit { get; set; }
+        public Action OnStartFetchingConfig { get; set; }
+        public event IFirebaseService.OnFetchFailHandler OnFetchFail;
+        public event IFirebaseService.OnFetchSuccessHandler OnFetchSuccess;
+
         public void LogEvent(string eventName, params EventParameter[] parameters)
         {
             
