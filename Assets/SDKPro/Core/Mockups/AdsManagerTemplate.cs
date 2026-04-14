@@ -64,6 +64,7 @@ namespace SDKPro.Core.Mockups
             adsService.OnRewardDisplayed += () => OnRewardDisplayed(adsService);
             adsService.OnRewardDisplayedFail += error => OnRewardDisplayedFail(error, adsService);
             adsService.OnRewardReceive += () => OnRewardReceive(adsService);
+            adsService.OnRewardAdClose += () => OnRewardHidden(adsService);
             adsService.OnRewardClicked += () => OnRewardClicked(adsService);
             adsService.OnRewardLoadRequest += () => OnRewardLoadRequest(adsService);
             adsService.OnRewardLoadedSuccess += () => OnRewardLoadedSuccess(adsService);
@@ -423,6 +424,12 @@ namespace SDKPro.Core.Mockups
             })).Forget();
 
             string sourceId = "RewardReceive";
+            HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardReceive, m_AdsEventMmpBuilder.OnRewardReceive);
+        }
+
+        void OnRewardHidden(IAdsService adsService)
+        {
+            string sourceId = "RewardHidden";
             HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardReceive, m_AdsEventMmpBuilder.OnRewardReceive);
         }
 

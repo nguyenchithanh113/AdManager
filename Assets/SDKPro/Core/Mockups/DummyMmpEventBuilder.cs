@@ -53,6 +53,11 @@ namespace SDKPro.Core.Mockups
         {
             return EventBuilderResult.Fail;
         }
+        
+        public override EventBuilderResult OnRewardHidden(RewardEventInfo info)
+        {
+            return EventBuilderResult.Fail;
+        }
 
         public override EventBuilderResult OnRewardLoadRequest(RewardEventInfo info)
         {

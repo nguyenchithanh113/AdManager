@@ -15,6 +15,7 @@ namespace SDKPro.Core.Ads
         public abstract EventBuilderResult OnRewardDisplayed(RewardEventInfo info);
         public abstract EventBuilderResult OnRewardDisplayedFailed(EventErrorInfo info);
         public abstract EventBuilderResult OnRewardReceive(RewardEventInfo info);
+        public abstract EventBuilderResult OnRewardHidden(RewardEventInfo info);
         public abstract EventBuilderResult OnRewardLoadRequest(RewardEventInfo info);
         public abstract EventBuilderResult OnRewardLoadedSuccess(RewardEventInfo info);
         public abstract EventBuilderResult OnRewardLoadedFail(EventErrorInfo info);
