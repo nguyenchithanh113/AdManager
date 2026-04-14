@@ -6,7 +6,7 @@ namespace SDKPro.Core.Firebase
 {
     public static class RemoteConfigVariableProviderHelper
     {
-        public static List<RemoteVariableInfo> BuildVariableInfos<T>()
+        public static List<RemoteVariableInfo> BuildVariableInfos<T>(T target)
             where T : class, IRemoteConfigVariableProvider
         {
             List<RemoteVariableInfo> variableInfos = new();
@@ -19,7 +19,7 @@ namespace SDKPro.Core.Firebase
                 if (fieldInfo.GetCustomAttribute<RemoteVariableAttribute>() != null)
                 {
                     var fieldName = fieldInfo.Name;
-                    object value = fieldInfo.GetRawConstantValue();
+                    object value = fieldInfo.GetValue(target);
                     RemoteVariableInfo info = new RemoteVariableInfo()
                     {
                         key = fieldName,
