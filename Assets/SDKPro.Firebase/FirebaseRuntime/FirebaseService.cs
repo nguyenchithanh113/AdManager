@@ -276,6 +276,12 @@ namespace SDKPro.FirebaseRuntime
                 var param = parameters[i];
                 var key = param.key;
 
+                if (param.value is null)
+                {
+                    Debug.LogError($"Value with key {key} is null");
+                    continue;
+                }
+
                 if (param.value is string str)
                 {
                     parsed.Add(new Parameter(key, str));
