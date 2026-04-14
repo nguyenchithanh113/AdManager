@@ -15,7 +15,7 @@ namespace SDKPro.Core.Firebase
 
             if (value is not int && value is not string && value is not double && value is not float && value is not long)
             {
-                Debug.LogError("Value is unsupported type");
+                Debug.LogError($"Value is unsupported type {value.GetType()}");
             }
         }
         
