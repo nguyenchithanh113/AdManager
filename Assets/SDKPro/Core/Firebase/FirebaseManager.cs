@@ -15,6 +15,8 @@ namespace SDKPro.Core.Firebase
         public event IFirebaseService.OnFetchFailHandler onFetchFail;
         public event IFirebaseService.OnFetchSuccessHandler onFetchSuccess;
 
+        public Action onLoggingEvent;
+
         public async UniTask Init(IRemoteConfigVariableProvider remoteConfigVariableProvider, CancellationToken token)
         {
             m_Service = ServiceProxy.Get();
@@ -26,15 +28,31 @@ namespace SDKPro.Core.Firebase
             await m_Service.Init(remoteConfigVariableProvider, token);
         }
 
-        public void LogEvent(string eventName, params EventParameter[] parameters) =>
+        public void LogEvent(string eventName, params EventParameter[] parameters)
+        {
             m_Service.LogEvent(eventName, parameters);
-        public void LogEvent(string eventName) =>
-            m_Service.LogEvent(eventName);
+            onLoggingEvent?.Invoke();
+        }
 
-        public void LogUniqueEvent(string eventName, params EventParameter[] parameters) =>
+        public void LogEvent(string eventName)
+        {
+            m_Service.LogEvent(eventName);
+            onLoggingEvent?.Invoke();
+        }
+
+
+        public void LogUniqueEvent(string eventName, params EventParameter[] parameters)
+        {
             m_Service.LogUniqueEvent(eventName, parameters);
-        
-        public void LogUniqueEvent(string eventName) =>
+            onLoggingEvent?.Invoke();
+        }
+
+
+        public void LogUniqueEvent(string eventName)
+        {
             m_Service.LogUniqueEvent(eventName);
+            onLoggingEvent?.Invoke();
+        }
+            
     }
 }
