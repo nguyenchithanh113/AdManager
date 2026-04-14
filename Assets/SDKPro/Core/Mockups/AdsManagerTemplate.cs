@@ -26,9 +26,9 @@ namespace SDKPro.Core.Mockups
         private float _lastTimeShowAoa = -100;
         private float _lastTimeLoadCollapsibleBanner = -100;
 
-        private string _interPlacement = "";
-        private string _rewardPlacement = "";
-        private string _reward = "";
+        private string _interPlacement = "undefined";
+        private string _rewardPlacement = "undefined";
+        private string _reward = "undefined";
 
         private Action _interSuccessCallback;
         private Action _rewardSuccessCallback;
