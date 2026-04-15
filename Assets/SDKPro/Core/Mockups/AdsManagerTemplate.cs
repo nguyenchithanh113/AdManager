@@ -430,7 +430,7 @@ namespace SDKPro.Core.Mockups
         void OnRewardHidden(IAdsService adsService)
         {
             string sourceId = "RewardHidden";
-            HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardReceive, m_AdsEventMmpBuilder.OnRewardReceive);
+            HandleLogIncrementalRewardEvent(sourceId, adsService, m_AdsEventFirebaseBuilder.OnRewardHidden, m_AdsEventMmpBuilder.OnRewardHidden);
         }
 
         void OnRewardClicked(IAdsService adsService)
