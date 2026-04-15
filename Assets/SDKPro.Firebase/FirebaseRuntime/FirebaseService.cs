@@ -242,7 +242,7 @@ namespace SDKPro.FirebaseRuntime
 
         public void LogUniqueEvent(string eventName, params EventParameter[] parameters)
         {
-            if (PlayerPrefs.GetInt(eventName, 0) == 1)
+            if (PlayerPrefs.GetInt(eventName, 0) == 0)
             {
                 var parsedParams = ParseEventParameters(parameters).ToArray();
                 if (parsedParams.Length > 0)
@@ -259,7 +259,7 @@ namespace SDKPro.FirebaseRuntime
 
         public void LogUniqueEvent(string eventName)
         {
-            if (PlayerPrefs.GetInt(eventName, 0) == 1)
+            if (PlayerPrefs.GetInt(eventName, 0) == 0)
             {
                 FirebaseAnalytics.LogEvent(eventName);
                 PlayerPrefs.SetInt(eventName, 1);
