@@ -259,6 +259,7 @@ namespace SDKPro.FirebaseRuntime
             if (!m_VerboseLogging) return;
             StringBuilder builder = new StringBuilder();
             builder.Append($"Event: {eventName}");
+            builder.AppendLine();
             builder.AppendLine("{");
 
             for (int i = 0; i < parameters.Length; i++)
