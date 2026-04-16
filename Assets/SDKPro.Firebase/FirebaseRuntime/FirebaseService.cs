@@ -139,6 +139,8 @@ namespace SDKPro.FirebaseRuntime
 
             var info = FirebaseRemoteConfig.DefaultInstance.Info;
 
+            bool fetched = false;
+
             switch (info.LastFetchStatus)
             {
                 case LastFetchStatus.Success:
@@ -186,6 +188,7 @@ namespace SDKPro.FirebaseRuntime
                                 success = true
                             });
                             OnFetchSuccess?.Invoke();
+                            fetched = true;
                         });
                     break;
                 case LastFetchStatus.Failure:
@@ -208,6 +211,11 @@ namespace SDKPro.FirebaseRuntime
                     Debug.Log("Latest Fetch call still pending.");
                     error = "Latest Fetch call still pending";
                     break;
+            }
+
+            if (fetched)
+            {
+                return;
             }
             
             m_RemoteConfigVariableProvider.Update(new UpdateResult()
