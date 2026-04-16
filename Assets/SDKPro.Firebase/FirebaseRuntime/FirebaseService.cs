@@ -121,6 +121,7 @@ namespace SDKPro.FirebaseRuntime
         private void FetchComplete(Task fetchTask)
         {
             string error = "Undefined";
+            bool fetched = false;
             
             if (fetchTask.IsCanceled)
             {
@@ -134,12 +135,11 @@ namespace SDKPro.FirebaseRuntime
             }
             else if (fetchTask.IsCompleted)
             {
+                fetched = true;
                 Debug.Log("Fetch completed successfully!");
             }
 
             var info = FirebaseRemoteConfig.DefaultInstance.Info;
-
-            bool fetched = false;
 
             switch (info.LastFetchStatus)
             {
