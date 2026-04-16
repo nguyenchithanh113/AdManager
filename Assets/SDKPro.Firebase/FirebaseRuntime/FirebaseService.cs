@@ -147,13 +147,13 @@ namespace SDKPro.FirebaseRuntime
                     FirebaseRemoteConfig.DefaultInstance.ActivateAsync()
                         .ContinueWithOnMainThread(task =>
                         {
-                            var keyList = m_RemoteVariableMap.Keys;
-                            foreach (var key in keyList)
+                            try
                             {
-                                var remoteConfig = FirebaseRemoteConfig.DefaultInstance.GetValue(key);
-                                if (remoteConfig.Source == ValueSource.RemoteValue)
+                                var keyList = m_RemoteVariableMap.Keys;
+                                foreach (var key in keyList)
                                 {
-                                    try
+                                    var remoteConfig = FirebaseRemoteConfig.DefaultInstance.GetValue(key);
+                                    if (remoteConfig.Source == ValueSource.RemoteValue)
                                     {
                                         if (m_RemoteVariableMap[key] is bool)
                                         {
@@ -174,21 +174,21 @@ namespace SDKPro.FirebaseRuntime
                                             Debug.Log($"Fetch Remote: {key} {value.ToString()}");
                                         }
                                     }
-                                    catch (Exception e)
-                                    {
-                                        Debug.LogException(e);
-                                        error = e.ToString();
-                                    }
                                 }
-                            }
 
-                            m_RemoteConfigVariableProvider.Update(new UpdateResult()
+                                m_RemoteConfigVariableProvider.Update(new UpdateResult()
+                                {
+                                    resultValues = m_RemoteVariableMap,
+                                    success = true
+                                });
+                                OnFetchSuccess?.Invoke();
+                                fetched = true;            
+                            }
+                            catch (Exception e)
                             {
-                                resultValues = m_RemoteVariableMap,
-                                success = true
-                            });
-                            OnFetchSuccess?.Invoke();
-                            fetched = true;
+                                Debug.LogException(e);
+                                error = e.ToString();
+                            }
                         });
                     break;
                 case LastFetchStatus.Failure:
