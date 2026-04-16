@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -149,9 +150,10 @@ namespace SDKPro.FirebaseRuntime
                         {
                             try
                             {
-                                var keyList = m_RemoteVariableMap.Keys;
-                                foreach (var key in keyList)
+                                var keyList = m_RemoteVariableMap.Keys.ToArray();
+                                for (int i = 0; i < keyList.Length; i++)
                                 {
+                                    var key = keyList[i];
                                     var remoteConfig = FirebaseRemoteConfig.DefaultInstance.GetValue(key);
                                     if (remoteConfig.Source == ValueSource.RemoteValue)
                                     {
