@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
@@ -18,6 +19,13 @@ namespace SDKPro.FirebaseRuntime
 
         private IRemoteConfigVariableProvider m_RemoteConfigVariableProvider;
         private Dictionary<string, object> m_RemoteVariableMap = new();
+
+        private bool m_VerboseLogging;
+
+        public FirebaseService(bool verboseLogging)
+        {
+            m_VerboseLogging = verboseLogging;
+        }
 
         public Action OnStartFetchingConfig { get; set; }
         public event IFirebaseService.OnFetchFailHandler OnFetchFail;
@@ -112,7 +120,7 @@ namespace SDKPro.FirebaseRuntime
         
         private void FetchComplete(Task fetchTask)
         {
-            string error = "";
+            string error = "Undefined";
             
             if (fetchTask.IsCanceled)
             {
@@ -167,6 +175,7 @@ namespace SDKPro.FirebaseRuntime
                                     catch (Exception e)
                                     {
                                         Debug.LogException(e);
+                                        error = e.ToString();
                                     }
                                 }
                             }
@@ -197,6 +206,7 @@ namespace SDKPro.FirebaseRuntime
                     break;
                 case LastFetchStatus.Pending:
                     Debug.Log("Latest Fetch call still pending.");
+                    error = "Latest Fetch call still pending";
                     break;
             }
             
@@ -224,6 +234,7 @@ namespace SDKPro.FirebaseRuntime
         public Action OnInit { get; set; }
         public void LogEvent(string eventName, params EventParameter[] parameters)
         {
+            VerboseLogging(eventName, parameters);
             var parsedParams = ParseEventParameters(parameters).ToArray();
             if (parsedParams.Length > 0)
             {
@@ -235,8 +246,34 @@ namespace SDKPro.FirebaseRuntime
             }
         }
 
+        void VerboseLogging(string eventName, EventParameter[] parameters)
+        {
+            if (!m_VerboseLogging) return;
+            StringBuilder builder = new StringBuilder();
+            builder.Append($"Event: {eventName}");
+            builder.AppendLine("{");
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                var param = parameters[i];
+                var valueStr = param.value == null ? "null" : param.value.ToString();
+                builder.AppendLine($"{param.key} : {valueStr}");
+            }
+
+            builder.AppendLine("}");
+            
+            Debug.Log(builder.ToString());
+        }
+
+        void VerboseLogging(string eventName)
+        {
+            if (!m_VerboseLogging) return;
+            Debug.Log($"Event: {eventName}");
+        }
+
         public void LogEvent(string eventName)
         {
+            VerboseLogging(eventName);
             FirebaseAnalytics.LogEvent(eventName);
         }
 
@@ -244,6 +281,7 @@ namespace SDKPro.FirebaseRuntime
         {
             if (PlayerPrefs.GetInt(eventName, 0) == 0)
             {
+                VerboseLogging(eventName, parameters);
                 var parsedParams = ParseEventParameters(parameters).ToArray();
                 if (parsedParams.Length > 0)
                 {
@@ -261,6 +299,7 @@ namespace SDKPro.FirebaseRuntime
         {
             if (PlayerPrefs.GetInt(eventName, 0) == 0)
             {
+                VerboseLogging(eventName);
                 FirebaseAnalytics.LogEvent(eventName);
                 PlayerPrefs.SetInt(eventName, 1);
             }
