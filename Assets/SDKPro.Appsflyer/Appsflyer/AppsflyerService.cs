@@ -25,11 +25,6 @@ namespace SDKPro.Appsflyer
 
         public bool initPurchaseConnector = true;
 
-        private void Start()
-        {
-            Firebase.Messaging.FirebaseMessaging.TokenReceived += OnTokenReceived;
-        }
-
         public async UniTask Init()
         {
             //Note: Must be call after GDPR, user is ensured to agree, otherwise he can't play
@@ -116,11 +111,11 @@ namespace SDKPro.Appsflyer
         return data;
     }
 #endif
-        
-        public void OnTokenReceived(object sender, Firebase.Messaging.TokenReceivedEventArgs token)
+
+        public void TrackUninstallToken(string token)
         {
 #if UNITY_ANDROID
-            AppsFlyer.updateServerUninstallToken(token.Token);
+            AppsFlyer.updateServerUninstallToken(token);
 #endif
         }
 

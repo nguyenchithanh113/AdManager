@@ -27,6 +27,11 @@ namespace SDKPro.Core.Mockups
             
         }
 
+        public void TrackUninstallToken(string token)
+        {
+            
+        }
+
         public void Dispose()
         {
             

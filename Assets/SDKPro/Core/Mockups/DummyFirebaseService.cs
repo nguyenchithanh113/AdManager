@@ -30,6 +30,7 @@ namespace SDKPro.Core.Mockups
         public Action OnStartFetchingConfig { get; set; }
         public event IFirebaseService.OnFetchFailHandler OnFetchFail;
         public event IFirebaseService.OnFetchSuccessHandler OnFetchSuccess;
+        public event IFirebaseService.OnTokenReceivedHandler OnTokenReceived;
 
         public void LogEvent(string eventName, params EventParameter[] parameters)
         {

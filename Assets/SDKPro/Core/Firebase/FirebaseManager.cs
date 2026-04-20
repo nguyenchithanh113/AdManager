@@ -14,6 +14,9 @@ namespace SDKPro.Core.Firebase
         public Action onStartFetchingConfig;
         public event IFirebaseService.OnFetchFailHandler onFetchFail;
         public event IFirebaseService.OnFetchSuccessHandler onFetchSuccess;
+        public event IFirebaseService.OnTokenReceivedHandler onTokenReceived;
+
+        public Action onInit;
 
         public Action onLoggingEvent;
 
@@ -23,6 +26,8 @@ namespace SDKPro.Core.Firebase
 
             m_Service.OnFetchFail += onFetchFail;
             m_Service.OnFetchSuccess += onFetchSuccess;
+            m_Service.OnTokenReceived += onTokenReceived;
+            m_Service.OnInit += onInit;
             m_Service.OnStartFetchingConfig += onStartFetchingConfig;
 
             await m_Service.Init(remoteConfigVariableProvider, token);

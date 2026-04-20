@@ -10,6 +10,7 @@ namespace SDKPro.Core.Mmp
         public string GetUserID();
         public void TrackAdEvent(AdsValue adsValue);
         public void TrackCustomEvent(string eventKey, Dictionary<string, string> eventValues);
+        public void TrackUninstallToken(string token);
         public void Dispose();
     }
 }

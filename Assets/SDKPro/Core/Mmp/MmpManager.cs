@@ -25,5 +25,7 @@ namespace SDKPro.Core.Mmp
 
         public void TrackCustomEvent(string eventKey, Dictionary<string, string> eventValues) =>
             m_Service.TrackCustomEvent(eventKey, eventValues);
+
+        public void TrackTokenReceived(string token) => m_Service.TrackUninstallToken(token);
     }
 }

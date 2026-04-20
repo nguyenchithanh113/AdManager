@@ -15,11 +15,14 @@ namespace SDKPro.Core.Mockups
         
         public async UniTask StartAsync(CancellationToken token)
         {
+            FirebaseManager.Instance.onTokenReceived -= MmpManager.Instance.TrackTokenReceived;
+            FirebaseManager.Instance.onTokenReceived += MmpManager.Instance.TrackTokenReceived;
+            
             await m_GdprProxy.Get().WaitForConsent(token);
             
-            MmpManager.Instance.Init(gameObject.GetCancellationTokenOnDestroy()).Forget();
-
             await FirebaseManager.Instance.Init(RemoteConfigTemplate.Instance, token);
+            
+            MmpManager.Instance.Init(gameObject.GetCancellationTokenOnDestroy()).Forget();
 
             await AdsManagerTemplate.Instance.Init();
             

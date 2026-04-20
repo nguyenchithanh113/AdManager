@@ -16,6 +16,8 @@ namespace SDKPro.FirebaseRuntime
 {
     public class FirebaseService : IFirebaseService
     {
+        public event IFirebaseService.OnTokenReceivedHandler OnTokenReceived;
+
         private bool m_IsInitalized;
 
         private IRemoteConfigVariableProvider m_RemoteConfigVariableProvider;
@@ -38,7 +40,7 @@ namespace SDKPro.FirebaseRuntime
             m_RemoteConfigVariableProvider = remoteConfigVariableProvider;
             m_RemoteVariableMap =
                 RemoteConfigVariableProviderHelper.ToDictionary(m_RemoteConfigVariableProvider.GetVariableInfos());
-            
+
             await Firebase.FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
             {
                 var dependencyStatus = task.Result;
@@ -60,13 +62,13 @@ namespace SDKPro.FirebaseRuntime
 
             await UniTask.WaitUntil(() => m_IsInitalized, cancellationToken: token);
             InitializeFirebase();
-            
+
             FirebaseRemoteConfig.DefaultInstance.SetDefaultsAsync(m_RemoteVariableMap)
                 .ContinueWithOnMainThread(task => { FetchDataAsync(); }, token);
-            
+
             OnInit?.Invoke();
         }
-        
+
         protected void InitializeFirebase()
         {
             /*var idfv = MappingUserIdTracking.GetIdfv();
@@ -74,6 +76,7 @@ namespace SDKPro.FirebaseRuntime
             {
                 FirebaseAnalytics.SetUserId(idfv);
             }*/
+
 #if !UNITY_EDITOR
             try
             {
@@ -88,8 +91,8 @@ namespace SDKPro.FirebaseRuntime
             
                 FirebaseMessaging.TokenRegistrationOnInitEnabled = true;
                 FirebaseMessaging.MessageReceived -= OnMessageReceived;
-                FirebaseMessaging.TokenReceived -= OnTokenReceived;
-                FirebaseMessaging.TokenReceived += OnTokenReceived;
+                FirebaseMessaging.TokenReceived -= OnTokenReceivedEvent;
+                FirebaseMessaging.TokenReceived += OnTokenReceivedEvent;
                 FirebaseMessaging.MessageReceived += OnMessageReceived;
             }
             catch (Exception e)
@@ -98,10 +101,18 @@ namespace SDKPro.FirebaseRuntime
             }
 #endif
         }
-        
-        public void OnTokenReceived(object sender, TokenReceivedEventArgs token)
+
+        public void OnTokenReceivedEvent(object sender, TokenReceivedEventArgs token)
         {
             Debug.Log("Received Registration Token: " + token.Token);
+            try
+            {
+                OnTokenReceived?.Invoke(token.Token);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         public void OnMessageReceived(object sender, MessageReceivedEventArgs e)
@@ -126,12 +137,12 @@ namespace SDKPro.FirebaseRuntime
                     TimeSpan.Zero);
             return fetchTask.ContinueWithOnMainThread(FetchComplete);
         }
-        
+
         private void FetchComplete(Task fetchTask)
         {
             string error = "Undefined";
             bool fetched = false;
-            
+
             if (fetchTask.IsCanceled)
             {
                 Debug.Log("Fetch canceled.");
@@ -192,7 +203,7 @@ namespace SDKPro.FirebaseRuntime
                                     success = true
                                 });
                                 OnFetchSuccess?.Invoke();
-                                fetched = true;            
+                                fetched = true;
                             }
                             catch (Exception e)
                             {
@@ -227,21 +238,22 @@ namespace SDKPro.FirebaseRuntime
             {
                 return;
             }
-            
+
             m_RemoteConfigVariableProvider.Update(new UpdateResult()
             {
                 resultValues = m_RemoteVariableMap,
                 success = false,
                 error = error
             });
-            
+
             OnFetchFail?.Invoke(error);
         }
-        
+
         private bool _isSchedulingRefetch;
+
         async UniTask SchedulingRefetchRemote()
         {
-            if(_isSchedulingRefetch) return;
+            if (_isSchedulingRefetch) return;
             _isSchedulingRefetch = true;
             await UniTask.WaitUntil((() => Application.internetReachability != NetworkReachability.NotReachable));
             await UniTask.WaitForSeconds(2f);
@@ -250,6 +262,7 @@ namespace SDKPro.FirebaseRuntime
         }
 
         public Action OnInit { get; set; }
+
         public void LogEvent(string eventName, params EventParameter[] parameters)
         {
             VerboseLogging(eventName, parameters);
@@ -280,7 +293,7 @@ namespace SDKPro.FirebaseRuntime
             }
 
             builder.AppendLine("}");
-            
+
             Debug.Log(builder.ToString());
         }
 
