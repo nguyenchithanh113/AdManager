@@ -39,7 +39,7 @@ namespace SDKPro.FirebaseRuntime
             m_RemoteVariableMap =
                 RemoteConfigVariableProviderHelper.ToDictionary(m_RemoteConfigVariableProvider.GetVariableInfos());
             
-            Firebase.FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
+            await Firebase.FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
             {
                 var dependencyStatus = task.Result;
                 if (dependencyStatus == Firebase.DependencyStatus.Available)
@@ -58,7 +58,7 @@ namespace SDKPro.FirebaseRuntime
                         "Could not resolve all Firebase dependencies: {0}", dependencyStatus));
                     // Firebase Unity SDK is not safe to use here.
                 }
-            });
+            }, token);
 
             await UniTask.WaitUntil(() => m_IsInitalized, cancellationToken: token);
             InitializeFirebase();
