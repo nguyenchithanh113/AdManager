@@ -8,7 +8,10 @@ using UnityEngine;
 
 namespace SDKPro.Appsflyer
 {
-    public class AppsflyerService : MonoBehaviour, IMmpService, IAppsFlyerConversionData
+    public class AppsflyerService : MonoBehaviour, IMmpService, IAppsFlyerConversionData,
+        IAppsFlyerPurchaseValidation,               // For purchase validation callbacks  
+        IAppsFlyerPurchaseRevenueDataSource,        // For StoreKit 1 additional parameters 
+        IAppsFlyerPurchaseRevenueDataSourceStoreKit2 // For StoreKit 2 additional parameters 
     {
         // These fields are set from the editor so do not modify!
         //******************************//
@@ -19,6 +22,8 @@ namespace SDKPro.Appsflyer
         public bool isDebug;
         public bool getConversionData;
         //******************************//
+
+        public bool initPurchaseConnector = true;
 
         private void Start()
         {
@@ -42,6 +47,26 @@ namespace SDKPro.Appsflyer
 #endif
             AppsFlyer.enableTCFDataCollection(true);
             //******************************/
+
+            if (initPurchaseConnector)
+            {
+                AppsFlyerPurchaseConnector.init(this, Store.GOOGLE);
+                AppsFlyerPurchaseConnector.setStoreKitVersion(StoreKitVersion.SK2);
+                AppsFlyerPurchaseConnector.setIsSandbox(isDebug);
+        
+                AppsFlyerPurchaseConnector.setAutoLogPurchaseRevenue(
+                    AppsFlyerAutoLogPurchaseRevenueOptions.AppsFlyerAutoLogPurchaseRevenueOptionsAutoRenewableSubscriptions,
+                    AppsFlyerAutoLogPurchaseRevenueOptions.AppsFlyerAutoLogPurchaseRevenueOptionsInAppPurchases
+                );
+        
+                AppsFlyerPurchaseConnector.setPurchaseRevenueValidationListeners(true);
+                AppsFlyerPurchaseConnector.setPurchaseRevenueDataSource(this);
+                AppsFlyerPurchaseConnector.setPurchaseRevenueDataSourceStoreKit2(this);
+
+                // 3. Build and start
+                AppsFlyerPurchaseConnector.build();
+                AppsFlyerPurchaseConnector.startObservingTransactions();
+            }
             
             //ToDo: probably doesn't need to set consent data manually since we use enableTCFDataCollection
             /*var consent = new AppsFlyerConsent(
@@ -147,6 +172,60 @@ namespace SDKPro.Appsflyer
         public void Dispose()
         {
             
+        }
+        
+        // --- Purchase Revenue Data Sources ---
+        public Dictionary<string, object> PurchaseRevenueAdditionalParametersForProducts(
+            HashSet<object> products, 
+            HashSet<object> transactions)
+        {
+            return new Dictionary<string, object>
+            {
+                ["storekit_version"] = "1.0",
+                ["additional_param"] = "sk1_value",
+                ["product_count"] = products.Count,
+                ["transaction_count"] = transactions.Count
+            };
+        }
+
+        public Dictionary<string, object> PurchaseRevenueAdditionalParametersStoreKit2ForProducts(
+            HashSet<object> products, 
+            HashSet<object> transactions)
+        {
+            return new Dictionary<string, object>
+            {
+                ["storekit_version"] = "2.0", 
+                ["additional_param"] = "sk2_value",
+                ["product_count"] = products.Count,
+                ["transaction_count"] = transactions.Count
+            };
+        }
+
+        // --- Purchase Validation Callbacks ---
+        public void didReceivePurchaseRevenueValidationInfo(string validationInfo)
+        {
+            AppsFlyer.AFLog("didReceivePurchaseRevenueValidationInfo", validationInfo);
+            Debug.Log("Purchase validation success: " + validationInfo);
+        
+            // Parse and handle validation info
+            var dict = AFMiniJSON.Json.Deserialize(validationInfo) as Dictionary<string, object>;
+        
+#if UNITY_ANDROID
+        if (dict.ContainsKey("productPurchase"))
+        {
+            Debug.Log("Android in-app purchase validated");
+        }
+        else if (dict.ContainsKey("subscriptionPurchase"))
+        {
+            Debug.Log("Android subscription validated");
+        }
+#endif
+        }
+
+        public void didReceivePurchaseRevenueError(string error)
+        {
+            AppsFlyer.AFLog("didReceivePurchaseRevenueError", error);
+            Debug.LogError("Purchase validation error: " + error);
         }
         
         // Mark AppsFlyer CallBacks

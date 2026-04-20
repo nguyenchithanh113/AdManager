@@ -92,15 +92,11 @@ namespace SDKPro.Applovin
             MaxSdkCallbacks.AppOpen.OnAdRevenuePaidEvent += AoaOnAdPaidEvent;
 
             #endregion
-
-            if (!MaxSdk.HasUserConsent())
-            {
-                MaxSdk.SetHasUserConsent(true);
-                MaxSdk.SetDoNotSell(false);
-            }
             
             m_Initialized = true;
             OnAdServiceInitializeFinished?.Invoke();
+            
+            MaxSdkCallbacks.OnSdkInitializedEvent -= OnSdkInitialized;
         }
 
         public override void UpdateUserID(string id)
