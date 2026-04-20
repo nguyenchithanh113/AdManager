@@ -74,20 +74,27 @@ namespace SDKPro.FirebaseRuntime
                 FirebaseAnalytics.SetUserId(idfv);
             }*/
 #if !UNITY_EDITOR
-            FirebaseAnalytics.SetAnalyticsCollectionEnabled(true);
-            Dictionary<ConsentType, ConsentStatus> consentMap = new Dictionary<ConsentType, ConsentStatus>();
-            consentMap.Add(ConsentType.AnalyticsStorage, ConsentStatus.Granted);
-            consentMap.Add(ConsentType.AdStorage, ConsentStatus.Granted);
-            consentMap.Add(ConsentType.AdUserData, ConsentStatus.Granted);
-            consentMap.Add(ConsentType.AdPersonalization, ConsentStatus.Granted);
+            try
+            {
+                FirebaseAnalytics.SetAnalyticsCollectionEnabled(true);
+                Dictionary<ConsentType, ConsentStatus> consentMap = new Dictionary<ConsentType, ConsentStatus>();
+                consentMap.Add(ConsentType.AnalyticsStorage, ConsentStatus.Granted);
+                consentMap.Add(ConsentType.AdStorage, ConsentStatus.Granted);
+                consentMap.Add(ConsentType.AdUserData, ConsentStatus.Granted);
+                consentMap.Add(ConsentType.AdPersonalization, ConsentStatus.Granted);
 
-            FirebaseAnalytics.SetConsent(consentMap);
+                FirebaseAnalytics.SetConsent(consentMap);
             
-            FirebaseMessaging.TokenRegistrationOnInitEnabled = true;
-            FirebaseMessaging.MessageReceived -= OnMessageReceived;
-            FirebaseMessaging.TokenReceived -= OnTokenReceived;
-            FirebaseMessaging.TokenReceived += OnTokenReceived;
-            FirebaseMessaging.MessageReceived += OnMessageReceived;
+                FirebaseMessaging.TokenRegistrationOnInitEnabled = true;
+                FirebaseMessaging.MessageReceived -= OnMessageReceived;
+                FirebaseMessaging.TokenReceived -= OnTokenReceived;
+                FirebaseMessaging.TokenReceived += OnTokenReceived;
+                FirebaseMessaging.MessageReceived += OnMessageReceived;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
 #endif
         }
         
