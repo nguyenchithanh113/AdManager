@@ -122,9 +122,10 @@ namespace SDKPro.FirebaseRuntime
 
         public void Dispose()
         {
+            
 #if !UNITY_EDITOR
             FirebaseMessaging.MessageReceived -= OnMessageReceived;
-            FirebaseMessaging.TokenReceived -= OnTokenReceived;
+            FirebaseMessaging.TokenReceived -= OnTokenReceivedEvent;
 #endif
         }
 
