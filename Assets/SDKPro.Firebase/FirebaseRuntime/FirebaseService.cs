@@ -39,19 +39,17 @@ namespace SDKPro.FirebaseRuntime
             m_RemoteVariableMap =
                 RemoteConfigVariableProviderHelper.ToDictionary(m_RemoteConfigVariableProvider.GetVariableInfos());
             
-            await Firebase.FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
+            Firebase.FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
             {
                 var dependencyStatus = task.Result;
                 if (dependencyStatus == Firebase.DependencyStatus.Available)
                 {
                     // Create and hold a reference to your FirebaseApp,
                     // where app is a Firebase.FirebaseApp property of your application class.
-                    InitializeFirebase();
                     FirebaseRemoteConfig.DefaultInstance.SetDefaultsAsync(m_RemoteVariableMap)
                         .ContinueWithOnMainThread(task => { FetchDataAsync(); }, token);
                     // Set a flag here to indicate whether Firebase is ready to use by your app.
                     m_IsInitalized = true;
-                    OnInit?.Invoke();
                     Debug.Log("Firebase Initialized");
                 }
                 else
@@ -63,6 +61,8 @@ namespace SDKPro.FirebaseRuntime
             }, token);
 
             await UniTask.WaitUntil(() => m_IsInitalized, cancellationToken: token);
+            InitializeFirebase();
+            
             OnInit?.Invoke();
         }
         
