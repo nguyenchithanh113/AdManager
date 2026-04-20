@@ -58,7 +58,7 @@ namespace SDKPro.FirebaseRuntime
                         "Could not resolve all Firebase dependencies: {0}", dependencyStatus));
                     // Firebase Unity SDK is not safe to use here.
                 }
-            }, token);
+            });
 
             await UniTask.WaitUntil(() => m_IsInitalized, cancellationToken: token);
             InitializeFirebase();
