@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using R3;
 using SDKPro.Core.Firebase;
 
 namespace SDKPro.Core.Mockups
@@ -30,7 +31,9 @@ namespace SDKPro.Core.Mockups
         public Action OnStartFetchingConfig { get; set; }
         public event IFirebaseService.OnFetchFailHandler OnFetchFail;
         public event IFirebaseService.OnFetchSuccessHandler OnFetchSuccess;
-        public event IFirebaseService.OnTokenReceivedHandler OnTokenReceived;
+
+        public ReactiveProperty<TokenResult> TokenResult { get; } =
+            new ReactiveProperty<TokenResult>(new TokenResult() { fetched = false, value = "" });
 
         public void LogEvent(string eventName, params EventParameter[] parameters)
         {

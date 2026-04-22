@@ -1,10 +1,17 @@
 ﻿using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using R3;
 using SDKPro.Core.Utilities;
 
 namespace SDKPro.Core.Firebase
 {
+    public struct TokenResult
+    {
+        public bool fetched;
+        public string value;
+    }
+    
     public class FirebaseManager : Singleton<FirebaseManager>
     {
         public FirebaseServiceProxyBase ServiceProxy;
@@ -14,7 +21,8 @@ namespace SDKPro.Core.Firebase
         public Action onStartFetchingConfig;
         public event IFirebaseService.OnFetchFailHandler onFetchFail;
         public event IFirebaseService.OnFetchSuccessHandler onFetchSuccess;
-        public event IFirebaseService.OnTokenReceivedHandler onTokenReceived;
+        //public event IFirebaseService.OnTokenReceivedHandler onTokenReceived;
+        public ReactiveProperty<TokenResult> TokenResult => m_Service.TokenResult;
 
         public Action onInit;
 
@@ -26,7 +34,6 @@ namespace SDKPro.Core.Firebase
 
             m_Service.OnFetchFail += onFetchFail;
             m_Service.OnFetchSuccess += onFetchSuccess;
-            m_Service.OnTokenReceived += onTokenReceived;
             m_Service.OnInit += onInit;
             m_Service.OnStartFetchingConfig += onStartFetchingConfig;
 

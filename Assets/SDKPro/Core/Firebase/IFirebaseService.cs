@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using R3;
 using SDKPro.Core.Ads;
 
 namespace SDKPro.Core.Firebase
@@ -16,7 +17,9 @@ namespace SDKPro.Core.Firebase
         public Action OnStartFetchingConfig { get; set; }
         public event OnFetchFailHandler OnFetchFail;
         public event OnFetchSuccessHandler OnFetchSuccess;
-        public event OnTokenReceivedHandler OnTokenReceived;
+        //public event OnTokenReceivedHandler OnTokenReceived;
+        
+        public ReactiveProperty<TokenResult> TokenResult { get; }
 
         public void LogEvent(string eventName, params EventParameter[] parameters);
         public void LogEvent(string eventName);

@@ -9,6 +9,7 @@ using Firebase.Analytics;
 using Firebase.Extensions;
 using Firebase.Messaging;
 using Firebase.RemoteConfig;
+using R3;
 using SDKPro.Core.Firebase;
 using UnityEngine;
 
@@ -16,8 +17,6 @@ namespace SDKPro.FirebaseRuntime
 {
     public class FirebaseService : IFirebaseService
     {
-        public event IFirebaseService.OnTokenReceivedHandler OnTokenReceived;
-
         private bool m_IsInitalized;
 
         private IRemoteConfigVariableProvider m_RemoteConfigVariableProvider;
@@ -33,6 +32,12 @@ namespace SDKPro.FirebaseRuntime
         public Action OnStartFetchingConfig { get; set; }
         public event IFirebaseService.OnFetchFailHandler OnFetchFail;
         public event IFirebaseService.OnFetchSuccessHandler OnFetchSuccess;
+
+        public ReactiveProperty<TokenResult> TokenResult { get; } = new ReactiveProperty<TokenResult>(new TokenResult()
+        {
+            fetched = false,
+            value = ""
+        });
 
         public async UniTask Init(IRemoteConfigVariableProvider remoteConfigVariableProvider, CancellationToken token)
         {
@@ -107,7 +112,12 @@ namespace SDKPro.FirebaseRuntime
             Debug.Log("Received Registration Token: " + token.Token);
             try
             {
-                OnTokenReceived?.Invoke(token.Token);
+                //OnTokenReceived?.Invoke(token.Token);
+                this.TokenResult.Value = new TokenResult()
+                {
+                    fetched = true,
+                    value = token.Token
+                };
             }
             catch (Exception e)
             {
