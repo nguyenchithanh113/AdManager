@@ -128,7 +128,7 @@ namespace SDKPro.Appsflyer
 
         public void TrackAdEvent(AdsValue adsValue)
         {
-            if (!fireCustomAdRevEvent)
+            if (fireCustomAdRevEvent)
             {
                 Dictionary<string, string> additionalParams = new Dictionary<string, string>();
                 additionalParams.Add(AdRevenueScheme.AD_UNIT, adsValue.adIdentifier);
