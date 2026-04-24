@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using AppsFlyerSDK;
 using Cysharp.Threading.Tasks;
 using SDKPro.Core.Ads;
@@ -24,6 +25,7 @@ namespace SDKPro.Appsflyer
         //******************************//
 
         public bool initPurchaseConnector = true;
+        public bool fireCustomAdRevEvent = false;
 
         public async UniTask Init()
         {
@@ -126,13 +128,27 @@ namespace SDKPro.Appsflyer
 
         public void TrackAdEvent(AdsValue adsValue)
         {
-            Dictionary<string, string> additionalParams = new Dictionary<string, string>();
-            additionalParams.Add(AdRevenueScheme.AD_UNIT, adsValue.adIdentifier);
-            additionalParams.Add(AdRevenueScheme.AD_TYPE, adsValue.adType.ToString());
-            additionalParams.Add(AdRevenueScheme.PLACEMENT, adsValue.placement);
-            AFAdRevenueData revenueData = new AFAdRevenueData(adsValue.adNetwork, GetMediationType(adsValue.adPlatform),
-                adsValue.adCurrency, adsValue.value);
-            AppsFlyer.logAdRevenue(revenueData, additionalParams);
+            if (!fireCustomAdRevEvent)
+            {
+                Dictionary<string, string> additionalParams = new Dictionary<string, string>();
+                additionalParams.Add(AdRevenueScheme.AD_UNIT, adsValue.adIdentifier);
+                additionalParams.Add(AdRevenueScheme.AD_TYPE, adsValue.adType.ToString());
+                additionalParams.Add(AdRevenueScheme.PLACEMENT, adsValue.placement);
+                additionalParams.Add(AFInAppEvents.REVENUE, adsValue.value.ToString(CultureInfo.InvariantCulture));
+                additionalParams.Add("ad_network", adsValue.adNetwork);
+                additionalParams.Add("ad_platform", GetMediationType(adsValue.adPlatform).ToString());
+                AppsFlyer.sendEvent("af_ad_revenue", additionalParams);
+            }
+            else
+            {
+                Dictionary<string, string> additionalParams = new Dictionary<string, string>();
+                additionalParams.Add(AdRevenueScheme.AD_UNIT, adsValue.adIdentifier);
+                additionalParams.Add(AdRevenueScheme.AD_TYPE, adsValue.adType.ToString());
+                additionalParams.Add(AdRevenueScheme.PLACEMENT, adsValue.placement);
+                AFAdRevenueData revenueData = new AFAdRevenueData(adsValue.adNetwork, GetMediationType(adsValue.adPlatform),
+                    adsValue.adCurrency, adsValue.value);
+                AppsFlyer.logAdRevenue(revenueData, additionalParams);
+            }
 
             if (isDebug)
             {
