@@ -133,6 +133,11 @@ namespace SDKPro.Appsflyer
             AFAdRevenueData revenueData = new AFAdRevenueData(adsValue.adNetwork, GetMediationType(adsValue.adPlatform),
                 adsValue.adCurrency, adsValue.value);
             AppsFlyer.logAdRevenue(revenueData, additionalParams);
+
+            if (isDebug)
+            {
+                Debug.Log($"AF Ads Event: revenue {adsValue.value}, currency {adsValue.adCurrency}, network {adsValue.adNetwork}, platform {GetMediationType(adsValue.adPlatform)}");
+            }
         }
 
         public void TrackCustomEvent(string eventKey, Dictionary<string, string> eventValues)
