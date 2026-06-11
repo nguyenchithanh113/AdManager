@@ -183,7 +183,7 @@ namespace SDKPro.Admob
             ad.OnAdFullScreenContentClosed += () =>
             {
                 Debug.Log("Interstitial ad full screen content closed.");
-                ActionUtility.StartActionDelay(LoadInterstitial, 0.5f).Forget();
+                ActionUtility.StartActionDelayRealtime(LoadInterstitial, 0.5f).Forget();
                 OnInterHidden?.Invoke();
             };
             // Raised when the ad failed to open full screen content.
@@ -191,7 +191,7 @@ namespace SDKPro.Admob
             {
                 Debug.LogError("Interstitial ad failed to open full screen content with error : "
                                + error);
-                ActionUtility.StartActionDelay(LoadInterstitial, 0.5f).Forget();
+                ActionUtility.StartActionDelayRealtime(LoadInterstitial, 0.5f).Forget();
                 OnInterDisplayedFail?.Invoke(error.GetMessage());
             };
         }
@@ -308,7 +308,7 @@ namespace SDKPro.Admob
                 Debug.Log("Rewarded ad full screen content closed.");
                 OnRewardAdClose?.Invoke();
 
-                ActionUtility.StartActionDelay(LoadReward, 0.5f).Forget();
+                ActionUtility.StartActionDelayRealtime(LoadReward, 0.5f).Forget();
             };
             // Raised when the ad failed to open full screen content.
             ad.OnAdFullScreenContentFailed += (AdError error) =>
@@ -317,7 +317,7 @@ namespace SDKPro.Admob
                 Debug.LogError("Rewarded ad failed to open full screen content with error : "
                                + error);
 
-                ActionUtility.StartActionDelay(LoadReward, 0.5f).Forget();
+                ActionUtility.StartActionDelayRealtime(LoadReward, 0.5f).Forget();
             };
         }
 

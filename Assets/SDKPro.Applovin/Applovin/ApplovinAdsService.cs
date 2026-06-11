@@ -140,7 +140,7 @@ namespace SDKPro.Applovin
             MaxSdkBase.AdInfo adInfo)
         {
             OnInterDisplayedFail?.Invoke(errorInfo.Message);
-            ActionUtility.StartActionDelay(LoadInterstitial, 0.5f).Forget();
+            ActionUtility.StartActionDelayRealtime(LoadInterstitial, 0.5f).Forget();
         }
 
         private void InterstitialOnAdClickedEvent(string adUnitID, MaxSdkBase.AdInfo adInfo)
@@ -151,7 +151,7 @@ namespace SDKPro.Applovin
         private void InterstitialOnAdHiddenEvent(string adUnitId, MaxSdkBase.AdInfo adInfo)
         {
             OnInterHidden?.Invoke();
-            ActionUtility.StartActionDelay(LoadInterstitial, 0.5f).Forget();
+            ActionUtility.StartActionDelayRealtime(LoadInterstitial, 0.5f).Forget();
         }
         
         void InterstitialOnAdPaidEvent(string adUnitId, MaxSdkBase.AdInfo adInfo)
@@ -189,7 +189,7 @@ namespace SDKPro.Applovin
             MaxSdkBase.AdInfo adInfo)
         {
             // Rewarded ad failed to display. We recommend loading the next ad
-            ActionUtility.StartActionDelay(LoadReward, 0.5f).Forget();
+            ActionUtility.StartActionDelayRealtime(LoadReward, 0.5f).Forget();
             
             OnRewardDisplayedFail?.Invoke(errorInfo.Message);
         }
@@ -207,7 +207,7 @@ namespace SDKPro.Applovin
 
         private void RewardedOnAdHiddenEvent(string adUnitId, MaxSdkBase.AdInfo adInfo)
         {
-            ActionUtility.StartActionDelay(LoadReward, 0.5f).Forget();
+            ActionUtility.StartActionDelayRealtime(LoadReward, 0.5f).Forget();
             OnRewardAdClose?.Invoke();
         }
 
@@ -316,7 +316,7 @@ namespace SDKPro.Applovin
         public void OnAoaAdLoadFailedEvent(string adUnitId, MaxSdkBase.ErrorInfo error)
         {
             Debug.Log("Applovin Rewarded ad loaded Failed: " + error);
-            ActionUtility.StartActionDelay(LoadAOA, 7f).Forget();
+            ActionUtility.StartActionDelayRealtime(LoadAOA, 7f).Forget();
             OnAOALoadedFail.Invoke(error.Message);
         }
 
