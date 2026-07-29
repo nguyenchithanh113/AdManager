@@ -24,8 +24,16 @@ namespace SDKPro.Admob
         private bool m_IsInitialized;
         
         private bool _isMrecLoaded;
+        private bool _showBannerAfterLoad;
 
         public override string Mediation { get; } = "Admob";
+        public override AdsServiceCapabilities Capabilities =>
+            AdsServiceCapabilities.Interstitial |
+            AdsServiceCapabilities.Rewarded |
+            AdsServiceCapabilities.Banner |
+            AdsServiceCapabilities.CollapsibleBanner |
+            AdsServiceCapabilities.Mrec |
+            AdsServiceCapabilities.AppOpen;
 
         public AdmobAdsService(
             AdmobConfig admobConfig)
@@ -327,6 +335,11 @@ namespace SDKPro.Admob
 
         public override void LoadBanner()
         {
+            LoadBanner(BannerRequest.Standard);
+        }
+
+        public override void LoadBanner(BannerRequest request)
+        {
             if (_admobConfig.shouldDestroyBannerWhenLoad)
             {
                 CreateBanner();
@@ -338,6 +351,13 @@ namespace SDKPro.Admob
             }
             
             var adRequest = new AdRequest();
+            if (request.collapsible)
+            {
+                adRequest.Extras["collapsible"] =
+                    request.collapsiblePlacement == CollapsibleBannerPlacement.Top
+                        ? "top"
+                        : "bottom";
+            }
             
             Debug.Log("Loading banner ad.");
             _bannerView.LoadAd(adRequest);
@@ -349,6 +369,18 @@ namespace SDKPro.Admob
             {
                 _bannerView.Show();
             }
+        }
+
+        public override void ShowBanner(BannerRequest request)
+        {
+            if (!request.collapsible)
+            {
+                ShowBanner();
+                return;
+            }
+
+            _showBannerAfterLoad = true;
+            LoadBanner(request);
         }
 
         public override void HideBanner()
@@ -381,8 +413,7 @@ namespace SDKPro.Admob
 
         bool IsBannerCollapsible()
         {
-            return _bannerView.IsCollapsible();
-            return false;
+            return _bannerView != null && _bannerView.IsCollapsible();
         }
         
         private void RegisterEventHandlersBanner(BannerView ad)
@@ -391,11 +422,17 @@ namespace SDKPro.Admob
             ad.OnBannerAdLoaded += (() =>
             {
                 OnBannerLoadedSuccess?.Invoke(IsBannerCollapsible());
+                if (_showBannerAfterLoad)
+                {
+                    _showBannerAfterLoad = false;
+                    _bannerView?.Show();
+                }
                 Debug.Log("Ad Banner Loaded Success");
             });
             // Raised when an ad fails to load into the banner view.
             ad.OnBannerAdLoadFailed += (error =>
             {
+                _showBannerAfterLoad = false;
                 OnBannerLoadedFail?.Invoke(IsBannerCollapsible(), error.GetMessage());
                 Debug.Log("Ad Banner Loaded Failed with error: "+error);
             });
@@ -635,6 +672,8 @@ namespace SDKPro.Admob
             {
                 Debug.LogError("App open ad failed to open full screen content with error : "
                                + error);
+                OnAOADisplayedFail?.Invoke(error.GetMessage());
+                LoadAOA();
             };
         }
     }

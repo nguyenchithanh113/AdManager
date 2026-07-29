@@ -7,6 +7,8 @@ namespace SDKPro.Core.Ads.Proxy
         [SerializeField] private AdsLoadSetting m_AdsLoadSetting;
         public abstract IAdsService GetService();
 
-        public AdsLoadSetting GetAdsLoadSetting() => m_AdsLoadSetting;
+        protected AdsLoadSetting AdsLoadSetting => m_AdsLoadSetting;
+
+        public virtual AdsLoadSetting GetAdsLoadSetting() => m_AdsLoadSetting;
     }
 }

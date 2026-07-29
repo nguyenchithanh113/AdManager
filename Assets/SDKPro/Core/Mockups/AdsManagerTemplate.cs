@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using SDKPro.Core.Ads;
 using SDKPro.Core.Ads.Proxy;
 using SDKPro.Core.Firebase;
+using SDKPro.Core.GDPR;
 using SDKPro.Core.Mmp;
 using SDKPro.Core.Utilities;
 using UnityEngine;
@@ -17,6 +19,7 @@ namespace SDKPro.Core.Mockups
         [SerializeField] private AdsEventMmpBuilder m_AdsEventMmpBuilder;
 
         private IAdsService m_AdsService;
+        private bool m_EventsRegistered;
 
         private float m_InterCappingTime = 30f;
 
@@ -40,15 +43,49 @@ namespace SDKPro.Core.Mockups
         
         public List<Func<bool>> InterShowRules = new();
 
-        public async UniTask Init()
+        public bool IsGdprFlowCompleted =>
+            GetOrCreateAdsService().IsGdprFlowCompleted;
+
+        public bool HandlesGdprDuringInitialization =>
+            GetOrCreateAdsService().Capabilities.Supports(
+                AdsServiceCapabilities.GdprDuringInitialization);
+
+        public async UniTask Init(
+            GDPRProxy defaultGdprProxy,
+            CancellationToken token)
         {
+            IAdsService adsService = GetOrCreateAdsService();
+            IGDPR defaultGdpr = defaultGdprProxy != null
+                ? defaultGdprProxy.Get()
+                : null;
+
+            await adsService.Init(
+                m_AdsServiceProxy.GetAdsLoadSetting(),
+                defaultGdpr,
+                token);
+        }
+
+        private IAdsService GetOrCreateAdsService()
+        {
+            if (m_AdsService != null)
+            {
+                return m_AdsService;
+            }
+
+            if (m_AdsServiceProxy == null)
+            {
+                throw new InvalidOperationException(
+                    "AdsManagerTemplate requires an AdsServiceProxy.");
+            }
+
             m_AdsService = m_AdsServiceProxy.GetService();
-            RegisterAdsBaseEvents(m_AdsService);
+            if (!m_EventsRegistered)
+            {
+                RegisterAdsBaseEvents(m_AdsService);
+                m_EventsRegistered = true;
+            }
 
-            var tasks = new List<UniTask>();
-            tasks.Add(m_AdsService.Init(m_AdsServiceProxy.GetAdsLoadSetting()));
-
-            await UniTask.WhenAll(tasks);
+            return m_AdsService;
         }
 
         void RegisterAdsBaseEvents(IAdsService adsService)
@@ -77,6 +114,7 @@ namespace SDKPro.Core.Mockups
             adsService.OnBannerLoadedSuccess += collapsible => OnBannerLoadedSuccess(collapsible, adsService);
 
             adsService.OnAOADisplayed += () => OnAOADisplayed(adsService);
+            adsService.OnAOADisplayedFail += error => OnAOADisplayedFail(error, adsService);
             adsService.OnAOAHidden += () => OnAOAHidden(adsService);
             adsService.OnAOAClicked += () => OnAOAClicked(adsService);
             adsService.OnAOALoadedSuccess += () => OnAOALoadedSuccess(adsService);
@@ -200,6 +238,17 @@ namespace SDKPro.Core.Mockups
         public void ShowBanner()
         {
             m_AdsService.ShowBanner();
+        }
+
+        public void ShowCollapsibleBanner(
+            CollapsibleBannerPlacement placement = CollapsibleBannerPlacement.Bottom)
+        {
+            m_AdsService.ShowBanner(BannerRequest.Collapsible(placement));
+        }
+
+        public bool SupportsAdsCapability(AdsServiceCapabilities capability)
+        {
+            return m_AdsService != null && m_AdsService.Capabilities.Supports(capability);
         }
 
         public void HideBanner()
@@ -497,6 +546,18 @@ namespace SDKPro.Core.Mockups
         {
             string sourceId = "AOADisplayed";
             HandleLogIncrementalEvent(sourceId, "", adsService, m_AdsEventFirebaseBuilder.OnAOADisplayed, m_AdsEventMmpBuilder.OnAOADisplayed);
+        }
+
+        void OnAOADisplayedFail(string error, IAdsService adsService)
+        {
+            string sourceId = "AOADisplayedFail";
+            HandleLogIncrementalErrorEvent(
+                sourceId,
+                "",
+                error,
+                adsService,
+                m_AdsEventFirebaseBuilder.OnAOADisplayedFail,
+                m_AdsEventMmpBuilder.OnAOADisplayedFail);
         }
 
         void OnAOAHidden(IAdsService adsService)

@@ -1,0 +1,12 @@
+{
+  "name": "com.sdkpro.nativead",
+  "version": "1.0.0",
+  "displayName": "SDKPro Legacy Native Ad Adapter",
+  "description": "Optional project-specific adapter boundary for legacy native ad plugins.",
+  "unity": "6000.1",
+  "license": "MIT",
+  "author": {
+    "name": "Thanh",
+    "email": "chithanh1131999@gmail.com"
+  }
+}

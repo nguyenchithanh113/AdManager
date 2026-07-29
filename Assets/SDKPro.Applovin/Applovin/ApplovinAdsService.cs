@@ -10,6 +10,25 @@ namespace SDKPro.Applovin
     public class ApplovinAdsService : AdsServiceBase
     {
         public override string Mediation { get; } = "Applovin";
+        public override AdsServiceCapabilities Capabilities
+        {
+            get
+            {
+                AdsServiceCapabilities capabilities =
+                    AdsServiceCapabilities.Interstitial |
+                    AdsServiceCapabilities.Rewarded |
+                    AdsServiceCapabilities.Banner |
+                    AdsServiceCapabilities.Mrec |
+                    AdsServiceCapabilities.AppOpen;
+
+                if (m_Config.gdprHandledDuringInitialization)
+                {
+                    capabilities |= AdsServiceCapabilities.GdprDuringInitialization;
+                }
+
+                return capabilities;
+            }
+        }
         private ApplovinConfig m_Config;
 
         private MaxSdkBase.AdViewConfiguration m_BannerAdViewConfiguration;
@@ -333,6 +352,7 @@ namespace SDKPro.Applovin
 
         private void OnAoaDisplayFailedEvent(string adUnitId, MaxSdkBase.ErrorInfo arg2, MaxSdkBase.AdInfo arg3)
         {
+            OnAOADisplayedFail?.Invoke(arg2.Message);
             ActionUtility.StartActionOnMainThread(LoadAOA).Forget();
         }
 

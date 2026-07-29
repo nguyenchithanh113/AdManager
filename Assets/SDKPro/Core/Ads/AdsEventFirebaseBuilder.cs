@@ -86,6 +86,7 @@ namespace SDKPro.Core.Ads
         public abstract EventBuilderResult OnBannerLoadedSuccess(BannerEventInfo info);
 
         public abstract EventBuilderResult OnAOADisplayed(EventInfo info);
+        public virtual EventBuilderResult OnAOADisplayedFail(EventErrorInfo info) => EventBuilderResult.Fail;
         public abstract EventBuilderResult OnAOAHidden(EventInfo info);
         public abstract EventBuilderResult OnAOAClicked(EventInfo info);
         public abstract EventBuilderResult OnAOALoadedSuccess(EventInfo info);

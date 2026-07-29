@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using SDKPro.Core.GDPR;
 using UnityEngine;
 
 namespace SDKPro.Core.Ads
@@ -33,6 +34,7 @@ namespace SDKPro.Core.Ads
         public Action<bool> OnBannerLoadedSuccess { get; set; }
         
         public Action OnAOADisplayed { get; set; }
+        public Action<string> OnAOADisplayedFail { get; set; }
         public Action OnAOAHidden { get; set; }
         public Action OnAOAClicked { get; set; }
         public Action<string> OnAOALoadedFail { get; set; }
@@ -46,8 +48,13 @@ namespace SDKPro.Core.Ads
         public Action<AdsValue> OnAdsPaid { get; set; }
         
         public string Mediation { get; }
-        
-        public UniTask Init(AdsLoadSetting adsLoadSetting);
+        public AdsServiceCapabilities Capabilities { get; }
+
+        public bool IsGdprFlowCompleted { get; }
+        public UniTask Init(
+            AdsLoadSetting adsLoadSetting,
+            IGDPR defaultGdpr,
+            CancellationToken token);
 
         public UniTaskVoid ScheduleReloadInterstitial(CancellationToken token);
         public UniTaskVoid ScheduleReloadReward(CancellationToken token);
@@ -62,7 +69,9 @@ namespace SDKPro.Core.Ads
 
         public void CreateBanner();
         public void LoadBanner();
+        public void LoadBanner(BannerRequest request);
         public void ShowBanner();
+        public void ShowBanner(BannerRequest request);
         public void HideBanner();
 
         public void DestroyBanner();

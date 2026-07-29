@@ -68,10 +68,6 @@ namespace SDKPro.Admob
                     return;
                 }
 
-                //if (ConsentInformation.CanRequestAds())
-                //{
-                //    AdsManager.Instance.Init();
-                //}
                 // Consent has been gathered.
             });
         }

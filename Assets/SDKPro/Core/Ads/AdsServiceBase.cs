@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using SDKPro.Core.GDPR;
 using UnityEngine;
 
 namespace SDKPro.Core.Ads
@@ -31,6 +32,7 @@ namespace SDKPro.Core.Ads
         public Action<bool> OnBannerLoadedSuccess { get; set; }
         
         public Action OnAOADisplayed { get; set; }
+        public Action<string> OnAOADisplayedFail { get; set; }
         public Action OnAOAHidden { get; set; }
         public Action OnAOAClicked { get; set; }
         public Action<string> OnAOALoadedFail { get; set; }
@@ -44,6 +46,8 @@ namespace SDKPro.Core.Ads
         public Action<AdsValue> OnAdsPaid { get; set; }
         
         public abstract string Mediation { get; }
+        public abstract AdsServiceCapabilities Capabilities { get; }
+        public bool IsGdprFlowCompleted { get; private set; }
         
         protected bool _isScheduleReloadReward;
         protected bool _isScheduleReloadInter;
@@ -52,6 +56,7 @@ namespace SDKPro.Core.Ads
         protected int _interRetryAttempt = 0;
 
         protected CancellationTokenSource m_SessionToken;
+        private bool _isProviderInitialized;
         
         public bool IsInit { get; protected set; }
         public async UniTaskVoid ScheduleReloadInterstitial(CancellationToken token)
@@ -83,10 +88,43 @@ namespace SDKPro.Core.Ads
             LoadReward();
         }
 
-        public async UniTask Init(AdsLoadSetting adsLoadSetting)
+        public async UniTask Init(
+            AdsLoadSetting adsLoadSetting,
+            IGDPR defaultGdpr,
+            CancellationToken token)
         {
-            m_SessionToken = new CancellationTokenSource();
-            await InitInternal(m_SessionToken.Token);
+            if (IsInit)
+            {
+                return;
+            }
+
+            if (adsLoadSetting == null)
+            {
+                throw new ArgumentNullException(nameof(adsLoadSetting));
+            }
+
+            EnsureSessionToken(token);
+
+            if (Capabilities.Supports(AdsServiceCapabilities.GdprDuringInitialization))
+            {
+                // The provider contract guarantees that InitInternal returns
+                // only after its integrated GDPR flow is complete.
+                await EnsureProviderInitialized(m_SessionToken.Token);
+                IsGdprFlowCompleted = true;
+            }
+            else
+            {
+                if (defaultGdpr == null)
+                {
+                    throw new InvalidOperationException(
+                        $"{Mediation} does not handle GDPR during initialization. " +
+                        "Assign a default GoogleGDPRProxy before initializing this service.");
+                }
+
+                await defaultGdpr.WaitForConsent(m_SessionToken.Token);
+                IsGdprFlowCompleted = true;
+                await EnsureProviderInitialized(m_SessionToken.Token);
+            }
             
             if(adsLoadSetting.loadInter) LoadInterstitial();
             if(adsLoadSetting.loadReward) LoadReward();
@@ -114,13 +152,45 @@ namespace SDKPro.Core.Ads
 
         protected abstract UniTask InitInternal(CancellationToken token);
 
-        public void Dispose()
+        private async UniTask EnsureProviderInitialized(CancellationToken token)
         {
-            if (m_SessionToken is {IsCancellationRequested:false})
+            if (_isProviderInitialized)
             {
-                m_SessionToken.Cancel();
+                return;
+            }
+
+            await InitInternal(token);
+            _isProviderInitialized = true;
+        }
+
+        private void EnsureSessionToken(CancellationToken token)
+        {
+            if (m_SessionToken != null)
+            {
+                return;
+            }
+
+            m_SessionToken = token.CanBeCanceled
+                ? CancellationTokenSource.CreateLinkedTokenSource(token)
+                : new CancellationTokenSource();
+        }
+
+        public virtual void Dispose()
+        {
+            if (m_SessionToken != null)
+            {
+                if (!m_SessionToken.IsCancellationRequested)
+                {
+                    m_SessionToken.Cancel();
+                }
+
                 m_SessionToken.Dispose();
             }
+
+            m_SessionToken = null;
+            _isProviderInitialized = false;
+            IsGdprFlowCompleted = false;
+            IsInit = false;
         }
 
         public abstract void UpdateUserID(string id);
@@ -133,7 +203,19 @@ namespace SDKPro.Core.Ads
         public abstract void ShowReward();
         public abstract void CreateBanner();
         public abstract void LoadBanner();
+        public virtual void LoadBanner(BannerRequest request)
+        {
+            WarnIfCollapsibleBannerIsUnsupported(request);
+            LoadBanner();
+        }
+
         public abstract void ShowBanner();
+        public virtual void ShowBanner(BannerRequest request)
+        {
+            WarnIfCollapsibleBannerIsUnsupported(request);
+            ShowBanner();
+        }
+
         public abstract void HideBanner();
         public abstract void DestroyBanner();
         public abstract void CreateMrec();
@@ -145,5 +227,15 @@ namespace SDKPro.Core.Ads
         public abstract void LoadAOA();
         public abstract void ShowAOA();
         public abstract bool IsAOAReady();
+
+        private void WarnIfCollapsibleBannerIsUnsupported(BannerRequest request)
+        {
+            if (request.collapsible &&
+                !Capabilities.Supports(AdsServiceCapabilities.CollapsibleBanner))
+            {
+                Debug.LogWarning(
+                    $"{Mediation} does not support collapsible banners. Falling back to a normal banner.");
+            }
+        }
     }
 }

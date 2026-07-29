@@ -6,12 +6,16 @@ using SDKPro.Core.GDPR;
 using SDKPro.Core.Mmp;
 using SDKPro.Core.Utilities;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace SDKPro.Core.Mockups
 {
     public class SDKManagerTemplate : Singleton<SDKManagerTemplate>
     {
-        [SerializeField] private GDPRProxy m_GdprProxy;
+        [FormerlySerializedAs("m_GdprProxy")]
+        [SerializeField]
+        [Tooltip("Fallback GDPR flow for ads providers without an integrated flow. Assign GoogleGDPRProxy.")]
+        private GDPRProxy m_DefaultGoogleMobileAdsGdprProxy;
 
         private CompositeDisposable m_Bindings = new();
 
@@ -25,9 +29,17 @@ namespace SDKPro.Core.Mockups
 
         public async UniTask StartAsync(CancellationToken token)
         {
-            await m_GdprProxy.Get().WaitForConsent(token);
+            AdsManagerTemplate adsManager = AdsManagerTemplate.Instance;
+
+            // Integrated providers run GDPR inside ads initialization.
+            // Other providers await the default Google GDPR flow first.
+            await adsManager.Init(
+                m_DefaultGoogleMobileAdsGdprProxy,
+                token);
             
             await FirebaseManager.Instance.Init(RemoteConfigTemplate.Instance, token);
+
+            await UniTask.WaitForSeconds(0.5f, cancellationToken: token);
             
             MmpManager.Instance.Init(gameObject.GetCancellationTokenOnDestroy()).Forget();
 
@@ -39,8 +51,6 @@ namespace SDKPro.Core.Mockups
                 }
             }).AddTo(m_Bindings);
 
-            await AdsManagerTemplate.Instance.Init();
-            
         }
     }
 }
