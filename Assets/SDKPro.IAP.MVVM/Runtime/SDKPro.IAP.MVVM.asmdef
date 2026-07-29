@@ -1,0 +1,17 @@
+{
+  "name": "SDKPro.IAP.MVVM",
+  "rootNamespace": "SDKPro.IAP.MVVM",
+  "references": [
+    "SDKPro.IAP",
+    "R3.Unity"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

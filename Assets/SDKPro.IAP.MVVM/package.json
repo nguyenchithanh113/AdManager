@@ -1,0 +1,16 @@
+{
+  "name": "com.sdkpro.iap.mvvm",
+  "version": "1.0.0",
+  "displayName": "SDKPro IAP MVVM",
+  "description": "Optional R3-based product view-model helpers built on the shared SDKPro IAP purchase engine.",
+  "unity": "2021.3",
+  "license": "MIT",
+  "dependencies": {
+    "com.sdkpro.iap": "1.0.0",
+    "com.cysharp.r3": "1.3.0"
+  },
+  "author": {
+    "name": "Thanh",
+    "email": "chithanh1131999@gmail.com"
+  }
+}
