@@ -12,6 +12,7 @@ namespace SDKPro.IAP
         [SerializeField] private bool m_UseFakeStore;
         [SerializeField] private bool m_InitializeOnAwake = true;
         [SerializeField] private bool m_DontDestroyOnLoad = true;
+        [SerializeField, Min(1)] private int m_MaximumProductFetchAttempts = 3;
 
         private CancellationTokenSource m_LifetimeCancellation;
         private IapService m_Service;
@@ -19,6 +20,7 @@ namespace SDKPro.IAP
         public static IapManager Instance { get; private set; }
         public IIapService Service => m_Service;
         public bool IsReady => m_Service?.CanPurchase == true;
+        public bool HasCompleteCatalog => m_Service?.HasCompleteCatalog == true;
 
         private void Awake()
         {
@@ -35,7 +37,10 @@ namespace SDKPro.IAP
             }
 
             m_LifetimeCancellation = new CancellationTokenSource();
-            m_Service = new IapService(m_Catalog, m_UseFakeStore);
+            m_Service = new IapService(
+                m_Catalog,
+                m_UseFakeStore,
+                maximumProductFetchAttempts: m_MaximumProductFetchAttempts);
 
             if (m_InitializeOnAwake)
             {
@@ -115,6 +120,11 @@ namespace SDKPro.IAP
         public bool IsOwned(string productKey)
         {
             return m_Service.IsOwned(productKey);
+        }
+
+        public void RefreshProducts()
+        {
+            m_Service.RefreshProducts();
         }
 
         private async void ObserveInitialization()

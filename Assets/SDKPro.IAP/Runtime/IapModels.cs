@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -32,26 +33,46 @@ namespace SDKPro.IAP
     {
         public bool Succeeded { get; }
         public bool EntitlementsLoaded { get; }
+        public bool ProductsComplete { get; }
+        public IReadOnlyList<string> MissingProductKeys { get; }
         public string Error { get; }
 
         private IapInitializationResult(
             bool succeeded,
             bool entitlementsLoaded,
+            bool productsComplete,
+            IReadOnlyList<string> missingProductKeys,
             string error)
         {
             Succeeded = succeeded;
             EntitlementsLoaded = entitlementsLoaded;
+            ProductsComplete = productsComplete;
+            MissingProductKeys = missingProductKeys ?? Array.Empty<string>();
             Error = error;
         }
 
-        public static IapInitializationResult Ready(bool entitlementsLoaded)
+        public static IapInitializationResult Ready(
+            bool entitlementsLoaded,
+            IReadOnlyList<string> missingProductKeys = null)
         {
-            return new IapInitializationResult(true, entitlementsLoaded, null);
+            IReadOnlyList<string> missing =
+                missingProductKeys ?? Array.Empty<string>();
+            return new IapInitializationResult(
+                true,
+                entitlementsLoaded,
+                missing.Count == 0,
+                missing,
+                null);
         }
 
         public static IapInitializationResult Failed(string error)
         {
-            return new IapInitializationResult(false, false, error);
+            return new IapInitializationResult(
+                false,
+                false,
+                false,
+                Array.Empty<string>(),
+                error);
         }
     }
 

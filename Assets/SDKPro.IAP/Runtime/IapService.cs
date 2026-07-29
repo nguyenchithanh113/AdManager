@@ -10,6 +10,8 @@ namespace SDKPro.IAP
 {
     public sealed class IapService : IIapService
     {
+        private const int DefaultMaximumProductFetchAttempts = 3;
+
         private sealed class ActiveRequest
         {
             public string ProductKey;
@@ -40,7 +42,10 @@ namespace SDKPro.IAP
         private readonly IapCatalog m_Catalog;
         private readonly bool m_UseFakeStore;
         private readonly IIapFulfillmentStore m_FulfillmentStore;
+        private readonly int m_MaximumProductFetchAttempts;
         private readonly Dictionary<string, Product> m_Products =
+            new(StringComparer.Ordinal);
+        private readonly HashSet<string> m_MissingProductKeys =
             new(StringComparer.Ordinal);
         private readonly HashSet<string> m_OwnedProducts =
             new(StringComparer.Ordinal);
@@ -57,12 +62,23 @@ namespace SDKPro.IAP
         private StoreController m_StoreController;
         private Task<IapInitializationResult> m_InitializationTask;
         private TaskCompletionSource<IapInitializationResult> m_InitializationCompletion;
+        private string m_StoreName;
+        private int m_ProductFetchAttempt;
+        private bool m_ProductFetchInProgress;
+        private bool m_InitialPurchasesFetchStarted;
+        private bool m_RefreshPurchasesAfterProductFetch;
         private bool m_Disposed;
 
         public IapServiceState State { get; private set; } =
             IapServiceState.Uninitialized;
         public bool CanPurchase =>
             State is IapServiceState.Ready or IapServiceState.ReadyWithoutEntitlements;
+        public bool HasCompleteCatalog =>
+            m_Catalog != null &&
+            m_Catalog.Products.Count > 0 &&
+            m_MissingProductKeys.Count == 0;
+        public IReadOnlyCollection<string> MissingProductKeys =>
+            m_MissingProductKeys.ToArray();
 
         public event Action<IapServiceState> StateChanged;
         public event Action StoreConnected;
@@ -78,12 +94,21 @@ namespace SDKPro.IAP
         public IapService(
             IapCatalog catalog,
             bool useFakeStore = false,
-            IIapFulfillmentStore fulfillmentStore = null)
+            IIapFulfillmentStore fulfillmentStore = null,
+            int maximumProductFetchAttempts = DefaultMaximumProductFetchAttempts)
         {
+            if (maximumProductFetchAttempts < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(maximumProductFetchAttempts),
+                    "At least one product-fetch attempt is required.");
+            }
+
             m_Catalog = catalog;
             m_UseFakeStore = useFakeStore;
             m_FulfillmentStore =
                 fulfillmentStore ?? new PlayerPrefsIapFulfillmentStore();
+            m_MaximumProductFetchAttempts = maximumProductFetchAttempts;
         }
 
         public Task<IapInitializationResult> InitializeAsync(
@@ -106,6 +131,7 @@ namespace SDKPro.IAP
                 return FailInitialization(catalogError);
             }
 
+            UpdateMissingProductKeys();
             SetState(IapServiceState.Initializing);
             m_InitializationCompletion =
                 new TaskCompletionSource<IapInitializationResult>(
@@ -120,11 +146,12 @@ namespace SDKPro.IAP
 
                 await m_StoreController.Connect();
 
-                string storeName = m_UseFakeStore
+                m_StoreName = m_UseFakeStore
                     ? "fake"
                     : DefaultStoreHelper.GetDefaultStoreName();
-                m_StoreController.FetchProductsWithNoRetries(
-                    m_Catalog.BuildDefinitions(storeName));
+                BeginProductFetch(
+                    m_Catalog.BuildDefinitions(m_StoreName),
+                    true);
             }
             catch (Exception exception)
             {
@@ -307,6 +334,28 @@ namespace SDKPro.IAP
             return m_OwnedProducts.Contains(productKey ?? string.Empty);
         }
 
+        public void RefreshProducts()
+        {
+            ThrowIfDisposed();
+            if (m_StoreController == null ||
+                m_ProductFetchInProgress ||
+                State is IapServiceState.Uninitialized or IapServiceState.Failed)
+            {
+                return;
+            }
+
+            List<ProductDefinition> definitions = GetMissingProductDefinitions();
+            if (definitions.Count == 0)
+            {
+                definitions = m_Catalog.BuildDefinitions(m_StoreName);
+            }
+
+            m_RefreshPurchasesAfterProductFetch =
+                State is IapServiceState.Ready or
+                    IapServiceState.ReadyWithoutEntitlements;
+            BeginProductFetch(definitions, true);
+        }
+
         public void RefreshPurchases()
         {
             ThrowIfDisposed();
@@ -406,32 +455,51 @@ namespace SDKPro.IAP
 
         private void HandleProductsFetched(List<Product> products)
         {
-            m_Products.Clear();
-            foreach (Product product in products)
-            {
-                m_Products[product.definition.id] = product;
-            }
-
+            MergeProducts(products);
             ProductsChanged?.Invoke();
-            m_StoreController.FetchPurchases();
+            if (HasCompleteCatalog)
+            {
+                FinishProductFetch();
+            }
         }
 
         private void HandleProductsFetchFailed(ProductFetchFailed failure)
         {
-            foreach (Product product in m_StoreController.GetProducts())
-            {
-                m_Products[product.definition.id] = product;
-            }
-
+            MergeProducts(m_StoreController.GetProducts());
             ProductsChanged?.Invoke();
-            if (m_Products.Count > 0)
+
+            List<ProductDefinition> missing = GetMissingProductDefinitions();
+            if (missing.Count == 0)
             {
-                m_StoreController.FetchPurchases();
+                FinishProductFetch();
                 return;
             }
 
-            FailInitialization(
-                $"Product fetch failed: {failure?.FailureReason}");
+            if (m_ProductFetchAttempt < m_MaximumProductFetchAttempts)
+            {
+                Debug.LogWarning(
+                    $"IAP product fetch attempt {m_ProductFetchAttempt} " +
+                    $"did not return {missing.Count} catalog product(s). " +
+                    "Retrying only the missing products.");
+                BeginProductFetch(missing, false);
+                return;
+            }
+
+            m_ProductFetchInProgress = false;
+            string missingKeys = string.Join(", ", m_MissingProductKeys);
+            string error =
+                $"Product fetch remained incomplete after " +
+                $"{m_MaximumProductFetchAttempts} attempt(s). Missing: " +
+                $"{missingKeys}. Last error: {failure?.FailureReason}";
+
+            if (m_Products.Count == 0 && State == IapServiceState.Initializing)
+            {
+                FailInitialization(error);
+                return;
+            }
+
+            Debug.LogWarning(error);
+            FinishProductFetch();
         }
 
         private void HandlePurchasesFetched(Orders orders)
@@ -659,7 +727,101 @@ namespace SDKPro.IAP
                     ? IapServiceState.Ready
                     : IapServiceState.ReadyWithoutEntitlements);
             m_InitializationCompletion.TrySetResult(
-                IapInitializationResult.Ready(entitlementsLoaded));
+                IapInitializationResult.Ready(
+                    entitlementsLoaded,
+                    m_MissingProductKeys.ToArray()));
+        }
+
+        private void BeginProductFetch(
+            List<ProductDefinition> definitions,
+            bool resetAttempts)
+        {
+            if (resetAttempts)
+            {
+                m_ProductFetchAttempt = 0;
+            }
+
+            m_ProductFetchAttempt++;
+            m_ProductFetchInProgress = true;
+            m_StoreController.FetchProducts(
+                definitions,
+                CreateProductFetchRetryPolicy());
+        }
+
+        private IRetryPolicy CreateProductFetchRetryPolicy()
+        {
+            int maximumRetries = Math.Max(
+                0,
+                m_MaximumProductFetchAttempts - 1);
+            return new AggregateRetryPolicy(
+                new MaximumNumberOfAttemptsRetryPolicy(maximumRetries),
+                new ExponentialBackOffRetryPolicy(
+                    baseRetryDelay: 500,
+                    maxRetryDelay: 2000));
+        }
+
+        private void FinishProductFetch()
+        {
+            m_ProductFetchInProgress = false;
+            if (State == IapServiceState.Initializing)
+            {
+                if (!m_InitialPurchasesFetchStarted)
+                {
+                    m_InitialPurchasesFetchStarted = true;
+                    m_StoreController.FetchPurchases();
+                }
+
+                return;
+            }
+
+            if (m_RefreshPurchasesAfterProductFetch)
+            {
+                m_RefreshPurchasesAfterProductFetch = false;
+                m_StoreController.FetchPurchases();
+            }
+        }
+
+        private void MergeProducts(IEnumerable<Product> products)
+        {
+            if (products != null)
+            {
+                foreach (Product product in products)
+                {
+                    if (product != null)
+                    {
+                        m_Products[product.definition.id] = product;
+                    }
+                }
+            }
+
+            UpdateMissingProductKeys();
+        }
+
+        private void UpdateMissingProductKeys()
+        {
+            m_MissingProductKeys.Clear();
+            if (m_Catalog == null)
+            {
+                return;
+            }
+
+            foreach (IapProductConfig product in m_Catalog.Products)
+            {
+                if (product != null &&
+                    !m_Products.ContainsKey(product.Key))
+                {
+                    m_MissingProductKeys.Add(product.Key);
+                }
+            }
+        }
+
+        private List<ProductDefinition> GetMissingProductDefinitions()
+        {
+            return m_Catalog
+                .BuildDefinitions(m_StoreName)
+                .Where(definition =>
+                    m_MissingProductKeys.Contains(definition.id))
+                .ToList();
         }
 
         private IapInitializationResult FailInitialization(string error)

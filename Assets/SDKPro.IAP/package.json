@@ -1,6 +1,6 @@
 {
   "name": "com.sdkpro.iap",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "SDKPro IAP",
   "description": "A reusable Unity IAP 5 purchase lifecycle with catalog configuration, durable fulfillment deduplication, restore support, a fake-store option, and a legacy-friendly singleton facade.",
   "unity": "2021.3",

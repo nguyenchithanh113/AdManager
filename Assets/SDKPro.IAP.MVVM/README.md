@@ -13,6 +13,9 @@ Concrete game view models provide:
 The base model exposes reactive price, availability, ownership, and busy state
 plus a purchase-result stream. Store price metadata comes from the shared
 service; the catalog fallback is used only when store metadata is unavailable.
+The model remains subscribed to `ProductsChanged` even when its first lookup
+finds no product, so bounded retries or a later `RefreshProducts()` call update
+price and availability without recreating the view model.
 
 VContainer projects can register concrete view models as singletons exactly as
 they do today. Old games do not install this package and use `IapManager`

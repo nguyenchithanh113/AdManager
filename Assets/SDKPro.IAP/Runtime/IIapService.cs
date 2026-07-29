@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -8,6 +9,8 @@ namespace SDKPro.IAP
     {
         IapServiceState State { get; }
         bool CanPurchase { get; }
+        bool HasCompleteCatalog { get; }
+        IReadOnlyCollection<string> MissingProductKeys { get; }
 
         event Action<IapServiceState> StateChanged;
         event Action StoreConnected;
@@ -34,6 +37,7 @@ namespace SDKPro.IAP
         bool TryGetProduct(string productKey, out IapProductInfo product);
         string GetDisplayPrice(string productKey);
         bool IsOwned(string productKey);
+        void RefreshProducts();
         void RefreshPurchases();
         void RetryPendingFulfillments();
     }

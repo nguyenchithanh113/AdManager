@@ -47,6 +47,19 @@ The default `PlayerPrefsIapFulfillmentStore` is a local crash/retry safeguard,
 not anti-fraud protection. Games with valuable inventory should validate on a
 backend and provide a server-backed `IIapFulfillmentStore`.
 
+## Product fetching and recovery
+
+Product fetching uses bounded retries instead of a fixed initialization delay.
+If the store returns only a subset, the service keeps the successful products
+and retries only the missing definitions. `ProductsChanged` is raised for every
+successful batch, so UI can become available as metadata arrives.
+
+After the configured attempts are exhausted, initialization may still succeed
+with the available subset. Check `IapInitializationResult.ProductsComplete` or
+`IIapService.MissingProductKeys` to diagnose missing store configuration.
+`RefreshProducts()` retries missing products later, such as after connectivity
+returns; subscribed view models update without being recreated.
+
 ## Catalog price policy
 
 Store metadata is always authoritative for localized display price, currency,
