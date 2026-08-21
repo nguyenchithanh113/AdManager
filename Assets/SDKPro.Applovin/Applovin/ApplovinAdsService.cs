@@ -260,7 +260,7 @@ namespace SDKPro.Applovin
         private void OnBannerAdLoadFailedEvent(string adUnitId, MaxSdkBase.ErrorInfo errorInfo)
         {
             Debug.Log("Applovin Banner ad loaded Failed: "+errorInfo);
-            OnBannerLoadedFail.Invoke(false, errorInfo.Message);
+            OnBannerLoadedFail?.Invoke(false, errorInfo.Message);
         }
 
         private void OnBannerAdClickedEvent(string adUnitId, MaxSdkBase.AdInfo adInfo)
@@ -294,18 +294,18 @@ namespace SDKPro.Applovin
         public void OnMRecAdLoadedEvent(string adUnitId, MaxSdkBase.AdInfo adInfo)
         {
             _isMrecLoaded = true; Debug.Log("Applovin Mrec ad loaded");
-            OnMrecLoadedSuccess.Invoke();
+            OnMrecLoadedSuccess?.Invoke();
         }
 
         public void OnMRecAdLoadFailedEvent(string adUnitId, MaxSdkBase.ErrorInfo error)
         {
             Debug.Log("Applovin Mrec ad loaded Failed: "+error);
-            OnMrecLoadedFail.Invoke(error.Message);
+            OnMrecLoadedFail?.Invoke(error.Message);
         }
 
         public void OnMRecAdClickedEvent(string adUnitId, MaxSdkBase.AdInfo adInfo)
         {
-            OnMrecClicked.Invoke();
+            OnMrecClicked?.Invoke();
         }
         
 
@@ -329,25 +329,25 @@ namespace SDKPro.Applovin
         public void OnAoaAdLoadedEvent(string adUnitId, MaxSdkBase.AdInfo adInfo)
         {
             Debug.Log("Applovin Aoa ad loaded");
-            OnAOALoadedSuccess.Invoke();
+            OnAOALoadedSuccess?.Invoke();
         }
 
         public void OnAoaAdLoadFailedEvent(string adUnitId, MaxSdkBase.ErrorInfo error)
         {
             Debug.Log("Applovin Rewarded ad loaded Failed: " + error);
             ActionUtility.StartActionDelayRealtime(LoadAOA, 7f).Forget();
-            OnAOALoadedFail.Invoke(error.Message);
+            OnAOALoadedFail?.Invoke(error.Message);
         }
 
         public void OnAoaAdClickedEvent(string adUnitId, MaxSdkBase.AdInfo adInfo)
         {
-            OnAOAClicked.Invoke();
+            OnAOAClicked?.Invoke();
         }
 
         private void OnAoaHiddenEvent(string adUnitId, MaxSdkBase.AdInfo arg2)
         {
             ActionUtility.StartActionOnMainThread(LoadAOA).Forget();
-            OnAOAHidden.Invoke();
+            OnAOAHidden?.Invoke();
         }
 
         private void OnAoaDisplayFailedEvent(string adUnitId, MaxSdkBase.ErrorInfo arg2, MaxSdkBase.AdInfo arg3)
@@ -358,7 +358,7 @@ namespace SDKPro.Applovin
 
         private void OnAoaDisplayEvent(string adUnitId, MaxSdkBase.AdInfo arg2)
         {
-            OnAOADisplayed.Invoke();
+            OnAOADisplayed?.Invoke();
         }
         
         void AoaOnAdPaidEvent(string adUnitId, MaxSdkBase.AdInfo adInfo)
